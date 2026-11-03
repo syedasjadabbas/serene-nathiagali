@@ -51,36 +51,20 @@ export function homeSetup(root: HTMLElement) {
       .from(document.querySelector('.header'), { opacity: 0, y: -20, duration: 0.8 * d, ease: 'power3.out' }, 0.4 * d)
   }
 
-  /* ---------- hero: the image drifts with the mouse, the headline drifts against it ---------- */
-  const offPointer = (() => {
-    if (reducedMotion || window.matchMedia('(pointer: coarse)').matches) return () => {}
-    const media = $('.hero__media', root), title = $('.hero__title', root)
-    if (!media || !title) return () => {}
-    const mx = gsap.quickTo(media, 'x', { duration: 1.4, ease: 'power3.out' })
-    const my = gsap.quickTo(media, 'y', { duration: 1.4, ease: 'power3.out' })
-    const tx = gsap.quickTo(title, 'x', { duration: 1.6, ease: 'power3.out' })
-    const move = (e: PointerEvent) => {
-      if (window.scrollY > window.innerHeight) return // only while the hero is on screen
-      const nx = e.clientX / window.innerWidth - 0.5, ny = e.clientY / window.innerHeight - 0.5
-      mx(nx * -24); my(ny * -16); tx(nx * 10)
-    }
-    window.addEventListener('pointermove', move)
-    return () => window.removeEventListener('pointermove', move)
-  })()
-
   /* ---------- hero: canvas frame sequence ---------- */
   // The hero film: three drone shots from the project's 3D animation (forest approach,
-  // ski-slope glide, rooftop crown), cut with dissolves and exported as frames.
-  const FRAME_COUNT = 107
+  // ski-slope glide, rooftop crown), cut with dissolves and exported as frames: every second
+  // frame of the 30 fps edit, lightly denoised over time so the foliage doesn't shimmer.
+  const FRAME_COUNT = 230
   const FRAME_W = 1600
   // pick by the pixels the cover-fit needs (portrait phones crop the middle of a wide frame)
   const neededWidth = Math.max(window.innerWidth, window.innerHeight * 16 / 9) * Math.min(window.devicePixelRatio || 1, 2)
   const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData
   const frameSet = saveData || neededWidth < 1100 ? 'sm' : 'lg'
   // AVIF where the browser decodes it (about half the size of WebP), WebP otherwise
-  let frameSrc = (i: number) => `/assets/film/${frameSet}/${String(i + 1).padStart(3, '0')}.avif`
+  let frameSrc = (i: number) => `/assets/hero/${frameSet}/${String(i + 1).padStart(3, '0')}.avif`
   const avifReady = supportsAvif().then((ok) => {
-    if (!ok) frameSrc = (i: number) => `/assets/film/webp/${String(i + 1).padStart(3, '0')}.webp`
+    if (!ok) frameSrc = (i: number) => `/assets/hero/webp/${String(i + 1).padStart(3, '0')}.webp`
   })
   const canvas = $<HTMLCanvasElement>('.hero__canvas', root)!
   const ctx2d = canvas.getContext('2d', { alpha: false })!
@@ -91,8 +75,8 @@ export function homeSetup(root: HTMLElement) {
   const bitmaps = new Map<number, ImageBitmap>()
   const decoding = new Set<number>()
   // decode further ahead in the direction of travel than behind it
-  const AHEAD = frameSet === 'lg' ? 24 : 28
-  const BEHIND = 8
+  const AHEAD = frameSet === 'lg' ? 32 : 40
+  const BEHIND = 10
   let wanted = 0 // fractional frame position from the scroll, e.g. 41.37
   let direction = 1
   let drawnKey = ''
@@ -142,7 +126,7 @@ export function homeSetup(root: HTMLElement) {
     ctx2d.drawImage(bm, (cw - w) / 2, (ch - h) / 2, w, h)
   }
   // Draws the frame under the scroll position and dissolves into the next one by the
-  // fractional remainder, so a 7 fps film moves smoothly instead of stepping.
+  // fractional remainder, so a 15 fps film moves smoothly instead of stepping.
   const paint = () => {
     const i0 = Math.floor(wanted), t = wanted - i0
     const base = nearest(i0)
@@ -357,7 +341,6 @@ export function homeSetup(root: HTMLElement) {
     alive = false
     window.removeEventListener('resize', sizeCanvas)
     window.removeEventListener('scroll', keepTop)
-    offPointer()
     body.classList.remove('is-loading')
     bitmaps.forEach((bm) => bm.close())
     bitmaps.clear()
