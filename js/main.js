@@ -91,9 +91,9 @@ function runLoader() {
   const state = { shown: 0 };
   let loaded = 0;
   let heroFrameLoaded = false;
-  firstFrameReady.then(() => { heroFrameLoaded = true; });
+  heroFramesReady.then(() => { heroFrameLoaded = true; });
   const critical = [$('.loader__bg img'), $('.scene img')];
-  const ready = Promise.all([waitForImages(critical, (p) => { loaded = p; }), firstFrameReady]);
+  const ready = Promise.all([waitForImages(critical, (p) => { loaded = p; }), heroFramesReady]);
 
   const render = () => {
     const v = Math.round(state.shown);
@@ -149,67 +149,103 @@ gsap.set('.hero__title .line > span', { yPercent: 110 });
 
 /* ---------- hero: scroll drives the aerial fly-over (canvas frame sequence) ---------- */
 const FRAME_COUNT = 84;
+const FRAME_W = 1600;
 // Pick by the pixels the cover-fit actually needs (portrait phones crop the middle of a wide frame).
 const neededWidth = Math.max(window.innerWidth, window.innerHeight * 16 / 9) * Math.min(window.devicePixelRatio || 1, 2);
 const frameSet = navigator.connection?.saveData || neededWidth < 1100 ? 'sm' : 'lg';
 const frameSrc = (i) => `assets/hero/${frameSet}/${String(i + 1).padStart(3, '0')}.webp`;
 const heroCanvas = $('.hero__canvas');
-const heroCtx = heroCanvas.getContext('2d');
-const frames = new Array(FRAME_COUNT);
+const heroCtx = heroCanvas.getContext('2d', { alpha: false });
+
+// Compressed frames are kept as blobs; only a window of frames around the current
+// scroll position is decoded (off the main thread) into bitmaps, so drawing never
+// stalls on decoding and memory stays bounded.
+const blobs = new Array(FRAME_COUNT);
+const bitmaps = new Map();
+const decoding = new Set();
+const DECODE_AHEAD = frameSet === 'lg' ? 14 : 16;
 let wantedFrame = 0;
 let drawnFrame = -1;
+let drawQueued = false;
 
 function sizeCanvas() {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  heroCanvas.width = Math.round(heroCanvas.clientWidth * dpr);
-  heroCanvas.height = Math.round(heroCanvas.clientHeight * dpr);
+  // Never render more pixels than the frames contain; CSS scales the rest up.
+  const coverCssWidth = Math.max(heroCanvas.clientWidth, heroCanvas.clientHeight * 16 / 9);
+  const frameWidth = frameSet === 'lg' ? FRAME_W : 1024;
+  const k = Math.min(window.devicePixelRatio || 1, 2, frameWidth / coverCssWidth);
+  heroCanvas.width = Math.round(heroCanvas.clientWidth * k);
+  heroCanvas.height = Math.round(heroCanvas.clientHeight * k);
   drawnFrame = -1;
-  drawFrame(wantedFrame);
+  requestDraw(wantedFrame);
 }
 
-// Draws the requested frame, or the nearest one already downloaded.
-function drawFrame(i) {
-  wantedFrame = i;
-  let img = null;
-  for (let d = 0; d < FRAME_COUNT && !img; d++) {
-    if (frames[i - d]?.complete) img = frames[i - d];
-    else if (frames[i + d]?.complete) img = frames[i + d];
+function decodeAround(center) {
+  for (let d = 0; d <= DECODE_AHEAD; d++) {
+    for (const i of [center + d, center - d]) {
+      if (i < 0 || i >= FRAME_COUNT || !blobs[i] || bitmaps.has(i) || decoding.has(i)) continue;
+      decoding.add(i);
+      createImageBitmap(blobs[i]).then((bm) => {
+        decoding.delete(i);
+        if (Math.abs(i - wantedFrame) > DECODE_AHEAD * 2) { bm.close(); return; }
+        bitmaps.set(i, bm);
+        if (Math.abs(i - wantedFrame) < Math.abs(drawnFrame - wantedFrame) || drawnFrame === -1) requestDraw(wantedFrame);
+      }).catch(() => decoding.delete(i));
+    }
   }
-  if (!img || !img.naturalWidth) return;
-  const key = frames.indexOf(img);
-  if (key === drawnFrame) return;
-  drawnFrame = key;
-  // object-fit: cover
-  const cw = heroCanvas.width, ch = heroCanvas.height;
-  const scale = Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
-  const w = img.naturalWidth * scale, h = img.naturalHeight * scale;
-  heroCtx.imageSmoothingQuality = 'high';
-  heroCtx.drawImage(img, (cw - w) / 2, (ch - h) / 2, w, h);
+  // Release bitmaps that have fallen far outside the window.
+  bitmaps.forEach((bm, i) => {
+    if (Math.abs(i - center) > DECODE_AHEAD * 2) { bm.close(); bitmaps.delete(i); }
+  });
 }
 
-// Load coarse-to-fine (every 8th frame, then 4th, 2nd, all) so scrubbing works early.
+function requestDraw(i) {
+  if (i !== wantedFrame) { wantedFrame = i; decodeAround(i); }
+  if (drawQueued) return;
+  drawQueued = true;
+  requestAnimationFrame(() => { drawQueued = false; paint(); });
+}
+
+// Paints the wanted frame, or the nearest one that is already decoded.
+function paint() {
+  const i = wantedFrame;
+  let key = -1;
+  for (let d = 0; d < FRAME_COUNT && key < 0; d++) {
+    if (bitmaps.has(i - d)) key = i - d;
+    else if (bitmaps.has(i + d)) key = i + d;
+  }
+  if (key < 0 || key === drawnFrame) return;
+  drawnFrame = key;
+  const bm = bitmaps.get(key);
+  const cw = heroCanvas.width, ch = heroCanvas.height;
+  const scale = Math.max(cw / bm.width, ch / bm.height);
+  const w = bm.width * scale, h = bm.height * scale;
+  heroCtx.drawImage(bm, (cw - w) / 2, (ch - h) / 2, w, h);
+}
+
+// Download coarse-to-fine (every 8th frame, then 4th, 2nd, all) so scrubbing works early.
 const loadOrder = [];
 [8, 4, 2, 1].forEach((step) => {
   for (let i = 0; i < FRAME_COUNT; i += step) if (!loadOrder.includes(i)) loadOrder.push(i);
 });
-const firstFrameReady = new Promise((resolve) => {
+const COARSE = Math.ceil(FRAME_COUNT / 4); // every 8th + every 4th frame
+const heroFramesReady = new Promise((resolve) => {
   let next = 0;
+  let done = 0;
   const loadNext = () => {
     if (next >= loadOrder.length) return;
     const i = loadOrder[next++];
-    const img = new Image();
-    img.decoding = 'async';
-    img.onload = img.onerror = () => {
-      if (i === 0) resolve();
-      if (Math.abs(i - wantedFrame) < Math.abs(drawnFrame - wantedFrame) || drawnFrame === -1) drawFrame(wantedFrame);
-      loadNext();
-    };
-    img.src = frameSrc(i);
-    frames[i] = img;
+    fetch(frameSrc(i))
+      .then((r) => r.blob())
+      .then((b) => { blobs[i] = b; if (Math.abs(i - wantedFrame) <= DECODE_AHEAD) decodeAround(wantedFrame); })
+      .catch(() => {})
+      .finally(() => {
+        if (++done === COARSE) resolve();
+        loadNext();
+      });
   };
-  for (let k = 0; k < 4; k++) loadNext(); // 4 parallel downloads
+  for (let k = 0; k < 6; k++) loadNext(); // parallel downloads
 });
-firstFrameReady.then(sizeCanvas);
+heroFramesReady.then(sizeCanvas);
 window.addEventListener('resize', sizeCanvas);
 
 if (!reduceMotion) {
@@ -229,7 +265,7 @@ if (!reduceMotion) {
     .to(fly, {
       p: 1,
       duration: 1,
-      onUpdate: () => drawFrame(Math.round(fly.p * (FRAME_COUNT - 1))),
+      onUpdate: () => requestDraw(Math.round(fly.p * (FRAME_COUNT - 1))),
     }, 0)
     .to('.hero__content', { y: -140, opacity: 0, duration: 0.25 }, 0)
     .to('.hero > .scroll-cue', { opacity: 0, duration: 0.1 }, 0)
