@@ -165,7 +165,7 @@ export default function Home() {
         <section className="residences" id="residences">
           <div className="cards">
             <Link className="card" to="/floor-plans">
-              <div className="card__img"><img src="/assets/img/renders/aerial-pool-sm.jpg" alt="Aerial view of the tower with its rooftop pool" loading="lazy" /></div>
+              <div className="card__img"><img src="/assets/img/project/aerial-pool.jpg" alt="Aerial view of the tower and its glass-roofed rooftop pool above the misty pine forest" loading="lazy" decoding="async" style={{ objectPosition: '50% 40%' }} /></div>
               <div className="card__body">
                 <span className="card__num">01</span>
                 <h3>Hotel Apartments</h3>
@@ -173,7 +173,7 @@ export default function Home() {
               </div>
             </Link>
             <Link className="card" to="/payment-plan">
-              <div className="card__img"><img src="/assets/img/renders/night-facade-sm.jpg" alt="Serene Heights hotel entrance lit up at night" loading="lazy" /></div>
+              <div className="card__img"><img src="/assets/img/project/night-facade.jpg" alt="Serene Heights lit up on a snowy evening, with cars at the entrance" loading="lazy" decoding="async" style={{ objectPosition: '50% 45%' }} /></div>
               <div className="card__body">
                 <span className="card__num">02</span>
                 <h3>Hotel Rooms</h3>
@@ -181,7 +181,7 @@ export default function Home() {
               </div>
             </Link>
             <Link className="card" to="/smart-property-unit">
-              <div className="card__img"><img src="/assets/img/renders/snow-tower-sm.jpg" alt="Serene Heights tower in winter" loading="lazy" /></div>
+              <div className="card__img"><img src="/assets/img/project/snow-tower.jpg" alt="The Serene Heights tower among snow-covered pines" loading="lazy" decoding="async" style={{ objectPosition: '50% 55%' }} /></div>
               <div className="card__body">
                 <span className="card__num">03</span>
                 <h3>Co-ownership</h3>
