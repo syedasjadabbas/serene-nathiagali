@@ -1,5 +1,5 @@
 import { use, useEffect, useMemo, useRef } from 'react'
-import { useFrame, useThree } from '@react-three/fiber'
+import { useFrame, useLoader, useThree } from '@react-three/fiber'
 import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
 import * as THREE from 'three'
 import { elevation, loadDem, project, EXAG, MAP_W, MAP_D, PLACES, SERENE, ROUTE_MAIN, ROUTE_ABBOTTABAD, LABELLED, type Place } from './geo'
@@ -19,7 +19,15 @@ function Pacer() {
   return null
 }
 
-const BG = '#0c1210'
+// daylight haze: the sky colour at the horizon and the colour distant terrain fades into
+const BG = '#8a9ea8'
+
+// Real satellite imagery of the Galyat (Copernicus Sentinel-2, 23 Feb 2026), aligned with the
+// terrain grid: it covers world x -40…34 km and z -44…48 km, the same tile as the elevation mesh.
+export const SAT_URL = (lite: boolean) => `/assets/map/galyat-sat-${lite ? 2048 : 4096}.jpg`
+const SAT_RECT = new THREE.Vector4(-40, -44, 74, 92)
+/** Starts loading the satellite texture early (called from the 3D preloader). */
+export const preloadMapTexture = (lite: boolean) => useLoader.preload(THREE.TextureLoader, SAT_URL(lite))
 const worldAt = (lat: number, lon: number, lift = 0) => {
   const [x, z] = project(lat, lon)
   return new THREE.Vector3(x, elevation(x, z) * EXAG + lift, z)
@@ -50,9 +58,10 @@ void main(){
 }`
 
 const terrainFrag = /* glsl */ `
+uniform sampler2D uSat;
+uniform vec4 uSatRect;
 uniform vec2 uHome;
 uniform float uScan;
-uniform float uTime;
 uniform vec2 uHalf;
 uniform vec3 uBg;
 varying float vH;
@@ -60,42 +69,38 @@ varying vec3 vN;
 varying vec3 vWorld;
 varying float vDepth;
 ${fogGLSL}
-float line(float v, float w){ float d = abs(fract(v) - 0.5); float fw = fwidth(v); return smoothstep(0.5 - fw * w, 0.5, d) * smoothstep(0.35, 0.08, fw); }
 void main(){
   vec3 n = normalize(vN);
-  vec3 moon = normalize(vec3(-0.75, 0.45, -0.25));
-  float lit = 0.25 + 1.1 * max(dot(n, moon), 0.0);
+  // ground colour from the satellite image under this point
+  vec2 uv = (vWorld.xz - uSatRect.xy) / uSatRect.zw;
+  vec3 albedo = texture2D(uSat, uv).rgb;
 
-  // elevation ramp: valley pine → upland → snow above ~2,350 m
-  vec3 c = mix(vec3(0.008, 0.03, 0.022), vec3(0.02, 0.06, 0.045), smoothstep(0.45, 1.3, vH));
-  c = mix(c, vec3(0.06, 0.09, 0.08), smoothstep(1.3, 2.1, vH));
-  float snow = smoothstep(2.42, 2.62, vH + (n.y - 0.85) * 0.5);
-  c = mix(c, vec3(0.14, 0.17, 0.16), snow);
-  c *= lit;
+  // relief from the elevation model, lit from the south-east like the image's own sun
+  vec3 sun = normalize(vec3(0.45, 0.7, 0.55));
+  float shade = 0.7 + 0.5 * max(dot(n, sun), 0.0) + 0.08 * (n.y - 0.9);
+  vec3 c = albedo * shade;
 
-  // contours every 100 m, index contours every 500 m
-  float minor = line(vH * 10.0 - 0.5, 1.0);
-  float major = line(vH * 2.0 - 0.5, 1.4);
-  c += vec3(0.75, 0.9, 0.83) * (minor * 0.05 + major * 0.26);
+  // gentle grade: a touch more contrast and colour than the raw scene
+  c = (c - 0.5) * 1.1 + 0.5;
+  float luma = dot(c, vec3(0.299, 0.587, 0.114));
+  c = mix(vec3(luma), c, 1.15);
 
-  // 5 km survey grid
-  float grid = max(line(vWorld.x / 5.0 - 0.5, 0.8), line(vWorld.z / 5.0 - 0.5, 0.8));
-  c += vec3(0.95, 0.98, 0.96) * grid * 0.05;
-
-  // scan ring travelling out from Serene Heights
+  // warm pulse travelling out from Serene Heights
   float d = distance(vWorld.xz, uHome);
   float ring = exp(-pow((d - uScan) * 1.6, 2.0)) * smoothstep(40.0, 0.0, uScan);
-  float halo = exp(-d * 0.5);
-  c += vec3(0.85, 1.0, 0.92) * (ring * 0.12 + halo * 0.08);
+  float halo = exp(-d * 0.6);
+  c += vec3(1.0, 0.86, 0.62) * (ring * 0.1 + halo * 0.07);
 
-  c = applyFog(c, vDepth);
-  // fade the map tile into the night at its edges
+  // aerial perspective: distant ground fades into the haze
+  c = applyFog(clamp(c, 0.0, 1.0), vDepth);
+  // soft, rounded fade at the tile's edge so it never reads as a flat rectangle
   vec2 e = abs(vWorld.xz - vec2(-3.0, 2.0)) / uHalf;
-  float edge = smoothstep(1.0, 0.82, max(e.x, e.y));
+  float r = pow(pow(e.x, 4.0) + pow(e.y, 4.0), 0.25);
+  float edge = smoothstep(1.0, 0.6, r);
   gl_FragColor = vec4(mix(uBg, c, edge), 1.0);
 }`
 
-function Terrain({ segs, grow, scan }: { segs: number; grow: React.RefObject<number>; scan: React.RefObject<number> }) {
+function Terrain({ segs, grow, scan, sat }: { segs: number; grow: React.RefObject<number>; scan: React.RefObject<number>; sat: THREE.Texture }) {
   const { geometry, material } = useMemo(() => {
     const g = new THREE.PlaneGeometry(MAP_W, MAP_D, segs, Math.round(segs * (MAP_D / MAP_W)))
     g.rotateX(-Math.PI / 2)
@@ -108,76 +113,21 @@ function Terrain({ segs, grow, scan }: { segs: number; grow: React.RefObject<num
       vertexShader: terrainVert, fragmentShader: terrainFrag, toneMapped: false,
       uniforms: {
         uGrow: { value: 0 }, uScan: { value: 0 }, uTime: { value: 0 },
+        uSat: { value: sat }, uSatRect: { value: SAT_RECT },
         uHome: { value: new THREE.Vector2(hx, hz) },
         uHalf: { value: new THREE.Vector2(MAP_W / 2, MAP_D / 2) },
         uBg: { value: new THREE.Color(BG) },
-        uFogColor: { value: new THREE.Color(BG) }, uFogNear: { value: 90 }, uFogFar: { value: 190 },
+        uFogColor: { value: new THREE.Color(BG) }, uFogNear: { value: 70 }, uFogFar: { value: 230 },
       },
     })
     return { geometry: g, material: m }
-  }, [segs])
+  }, [segs, sat])
   useFrame((s) => {
     material.uniforms.uGrow.value = Math.max(0.02, grow.current ?? 0)
     material.uniforms.uScan.value = scan.current ?? 0
     material.uniforms.uTime.value = s.clock.elapsedTime
   })
   return <mesh geometry={geometry} material={material} />
-}
-
-/* ---------- town lights ---------- */
-
-const lightsVert = /* glsl */ `
-uniform float uPixel;
-uniform float uOn;
-uniform float uGrow;
-attribute float aSize;
-varying float vA;
-void main(){
-  vec3 p = position; p.y *= uGrow;
-  vec4 mv = modelViewMatrix * vec4(p, 1.0);
-  gl_PointSize = aSize * uPixel * (34.0 / -mv.z);
-  vA = uOn;
-  gl_Position = projectionMatrix * mv;
-}`
-const lightsFrag = /* glsl */ `
-varying float vA;
-void main(){
-  float d = length(gl_PointCoord - 0.5);
-  float a = smoothstep(0.5, 0.0, d) * vA;
-  gl_FragColor = vec4(vec3(1.0, 0.7, 0.38) * a * 0.55, a);
-}`
-
-function TownLights({ grow, on }: { grow: React.RefObject<number>; on: React.RefObject<number> }) {
-  const { geometry, material } = useMemo(() => {
-    const pts: number[] = [], sizes: number[] = []
-    let seed = 3
-    const rand = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646
-    for (const p of PLACES) {
-      const [cx, cz] = project(p.lat, p.lon)
-      const spread = p.kind === 'city' ? Math.sqrt(p.size) * 0.12 : 0.6
-      for (let i = 0; i < p.size; i++) {
-        const r = Math.sqrt(-2 * Math.log(rand() + 1e-6)) * spread * 0.5
-        const a = rand() * Math.PI * 2
-        const x = cx + Math.cos(a) * r, z = cz + Math.sin(a) * r * 0.8
-        pts.push(x, elevation(x, z) * EXAG + 0.06, z)
-        sizes.push(0.25 + rand() * 0.6)
-      }
-    }
-    const g = new THREE.BufferGeometry()
-    g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3))
-    g.setAttribute('aSize', new THREE.Float32BufferAttribute(sizes, 1))
-    const m = new THREE.ShaderMaterial({
-      vertexShader: lightsVert, fragmentShader: lightsFrag, transparent: true, depthWrite: false,
-      blending: THREE.AdditiveBlending, toneMapped: false,
-      uniforms: { uPixel: { value: Math.min(window.devicePixelRatio, 2) }, uOn: { value: 0 }, uGrow: { value: 0 } },
-    })
-    return { geometry: g, material: m }
-  }, [])
-  useFrame(() => {
-    material.uniforms.uOn.value = on.current ?? 0
-    material.uniforms.uGrow.value = Math.max(0.02, grow.current ?? 0)
-  })
-  return <points geometry={geometry} material={material} frustumCulled={false} />
 }
 
 /* ---------- routes: glowing line that draws itself along the road ---------- */
@@ -193,10 +143,12 @@ uniform float uDash;
 varying vec2 vUv;
 void main(){
   if (vUv.x > uDraw) discard;
-  float head = exp(-(uDraw - vUv.x) * 60.0);
+  // bright drawing head, which fades out once the route is complete
+  float head = exp(-(uDraw - vUv.x) * 60.0) * (1.0 - smoothstep(0.96, 1.0, uDraw));
   float pulse = 0.5 + 0.5 * sin(vUv.x * 160.0 - uTime * 4.0);
-  float dash = uDash > 0.5 ? step(0.45, fract(vUv.x * 40.0)) : 1.0;
-  vec3 c = uColor * (0.9 + pulse * 0.35) * dash + vec3(1.0, 0.95, 0.85) * head * 2.5;
+  if (uDash > 0.5 && fract(vUv.x * 40.0) < 0.45) discard;
+  // stays just under the bloom threshold, so only the drawing head glows
+  vec3 c = uColor * (0.82 + pulse * 0.12) + vec3(1.0, 0.95, 0.85) * head * 1.4;
   gl_FragColor = vec4(c, 1.0);
 }`
 
@@ -378,11 +330,18 @@ function CameraRig({ main, home }: { main: THREE.CatmullRomCurve3; home: THREE.V
 
 export function MapScene({ lite, onStop, labelEls }: { lite: boolean; onStop: (i: number) => void; labelEls: React.RefObject<(HTMLDivElement | null)[]> }) {
   use(loadDem()) // suspend until the elevation grid is in
+  const sat = useLoader(THREE.TextureLoader, SAT_URL(lite))
+  useMemo(() => {
+    sat.colorSpace = THREE.NoColorSpace // sampled as-is: the shader outputs the image's own sRGB values
+    sat.flipY = false // image row 0 is the north edge, i.e. the smallest z
+    sat.anisotropy = 8
+    sat.needsUpdate = true
+  }, [sat])
   const main = useMemo(() => buildRoute(ROUTE_MAIN), [])
   const abbottabad = useMemo(() => buildRoute(ROUTE_ABBOTTABAD), [])
   const home = useMemo(() => worldAt(SERENE.lat, SERENE.lon), [])
 
-  const grow = useRef(0), scan = useRef(0), lights = useRef(0)
+  const grow = useRef(0), scan = useRef(0)
   const drawMain = useRef(0), drawAbb = useRef(0), beacon = useRef(0)
   const stopRef = useRef(-1)
 
@@ -402,7 +361,6 @@ export function MapScene({ lite, onStop, labelEls }: { lite: boolean; onStop: (i
   useFrame((st) => {
     const p = mapState.shown
     grow.current = ease(range(p, 0.01, PHASE.grow[1]))
-    lights.current = range(p, 0.06, 0.16)
     drawMain.current = ease(range(p, PHASE.main[0], PHASE.main[1]))
     drawAbb.current = ease(range(p, PHASE.abbottabad[0], PHASE.abbottabad[1]))
     beacon.current = range(p, 0.08, 0.18)
@@ -424,15 +382,14 @@ export function MapScene({ lite, onStop, labelEls }: { lite: boolean; onStop: (i
       <CameraRig main={main} home={home} />
       <LabelProjector els={labelEls} />
       <group>
-        <Terrain segs={lite ? 160 : 240} grow={grow} scan={scan} />
-        <TownLights grow={grow} on={lights} />
-        <Route curve={main} draw={drawMain} color="#bcd8ca" radius={0.11} />
-        <Route curve={abbottabad} draw={drawAbb} color="#a9c7b8" dashed radius={0.08} />
+        <Terrain segs={lite ? 160 : 240} grow={grow} scan={scan} sat={sat} />
+        <Route curve={main} draw={drawMain} color="#ffd79a" radius={0.08} />
+        <Route curve={abbottabad} draw={drawAbb} color="#ffe7c4" dashed radius={0.065} />
         <Beacon on={beacon} />
       </group>
       <EffectComposer multisampling={0}>
-        <Bloom mipmapBlur intensity={lite ? 0.7 : 0.9} luminanceThreshold={0.8} luminanceSmoothing={0.2} radius={0.65} />
-        <Vignette eskil={false} offset={0.25} darkness={0.7} />
+        <Bloom mipmapBlur intensity={lite ? 0.5 : 0.65} luminanceThreshold={0.97} luminanceSmoothing={0.1} radius={0.6} />
+        <Vignette eskil={false} offset={0.3} darkness={0.55} />
       </EffectComposer>
     </>
   )

@@ -5,12 +5,12 @@ let started: Promise<void> | null = null
 const idle = (fn: () => void) =>
   ('requestIdleCallback' in window ? window.requestIdleCallback(fn, { timeout: 1500 }) : setTimeout(fn, 200))
 
-/** Downloads the 3D engine, both scenes and the map's elevation data. Safe to call repeatedly. */
+/** Downloads the 3D engine, both scenes, the map's elevation data and satellite texture. Safe to call repeatedly. */
 export function preload3D() {
   started ??= Promise.all([
     import('./CanvasHost'),
     import('./SelectorScene'),
-    import('./MapScene'),
+    import('./MapScene').then((m) => m.preloadMapTexture(window.innerWidth < 760 || navigator.hardwareConcurrency <= 4)),
     import('./geo').then((g) => g.loadDem()),
   ]).then(() => undefined, () => undefined)
   return started

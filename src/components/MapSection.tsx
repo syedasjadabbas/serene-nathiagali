@@ -136,6 +136,7 @@ function MapSection3D() {
             <span className="map-legend"><i className="lg-main" />Via Murree <i className="lg-abb" />Via Abbottabad</span>
           </div>
         </div>
+        <small className="map-credit">Imagery: contains modified Copernicus Sentinel data 2026</small>
       </div>
     </section>
   )
