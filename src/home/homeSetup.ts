@@ -28,14 +28,35 @@ export function homeSetup(root: HTMLElement) {
   /* ---------- hero intro ---------- */
   const titleLines = $$('.hero__title .line > span', root)
   gsap.set(titleLines, { yPercent: 110 })
+  const bar = $('.hero__bar', root)
   const introHero = (instant = false) => {
     const d = instant ? 0 : 1
     gsap.timeline()
       .to($$('.hero__canvas', root), { scale: 1, duration: 2.4 * d, ease: 'expo.out' })
-      .to(titleLines, { yPercent: 0, duration: 1.2 * d, stagger: 0.09, ease: 'expo.out' }, 0.15 * d)
+      .to(titleLines, { yPercent: 0, duration: 1.3 * d, stagger: 0.12, ease: 'expo.out' }, 0.15 * d)
       .to($$('.hero .reveal-up', root), { opacity: 1, y: 0, duration: 1 * d, stagger: 0.1, ease: 'power3.out' }, 0.5 * d)
+      // the rule draws in from the left, then the facts rise in turn
+      .fromTo(bar, { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.4 * d, ease: 'expo.inOut' }, 0.55 * d)
+      .from($$('.hero__bar li', root), { opacity: 0, y: 18, duration: 0.9 * d, stagger: 0.08, ease: 'power3.out' }, 0.8 * d)
       .from(document.querySelector('.header'), { opacity: 0, y: -20, duration: 0.8 * d, ease: 'power3.out' }, 0.4 * d)
   }
+
+  /* ---------- hero: the image drifts with the mouse, the headline drifts against it ---------- */
+  const offPointer = (() => {
+    if (reducedMotion || window.matchMedia('(pointer: coarse)').matches) return () => {}
+    const media = $('.hero__media', root), title = $('.hero__title', root)
+    if (!media || !title) return () => {}
+    const mx = gsap.quickTo(media, 'x', { duration: 1.4, ease: 'power3.out' })
+    const my = gsap.quickTo(media, 'y', { duration: 1.4, ease: 'power3.out' })
+    const tx = gsap.quickTo(title, 'x', { duration: 1.6, ease: 'power3.out' })
+    const move = (e: PointerEvent) => {
+      if (window.scrollY > window.innerHeight) return // only while the hero is on screen
+      const nx = e.clientX / window.innerWidth - 0.5, ny = e.clientY / window.innerHeight - 0.5
+      mx(nx * -24); my(ny * -16); tx(nx * 10)
+    }
+    window.addEventListener('pointermove', move)
+    return () => window.removeEventListener('pointermove', move)
+  })()
 
   /* ---------- hero: canvas frame sequence ---------- */
   const FRAME_COUNT = 84
@@ -262,6 +283,7 @@ export function homeSetup(root: HTMLElement) {
     alive = false
     window.removeEventListener('resize', sizeCanvas)
     window.removeEventListener('scroll', keepTop)
+    offPointer()
     body.classList.remove('is-loading')
     bitmaps.forEach((bm) => bm.close())
     bitmaps.clear()

@@ -44,20 +44,33 @@ export default function Home() {
           <span>Pakistan's first winter resort</span>
           <strong>7,906 ft above the Galyat</strong>
         </p>
+        <div className="hero__grain" aria-hidden="true"></div>
         <div className="hero__content">
-          <h1 className="hero__title">
-            <span className="line"><span>A haven</span></span>
-            <span className="line"><span>in the</span></span>
-            <span className="line"><span>highlands</span></span>
-          </h1>
-          <p className="hero__text reveal-up">Pakistan's first and largest winter resort — fully furnished hotel apartments at 7,906 ft in the pines of Nathia Gali.</p>
-          <ul className="tags reveal-up">
-            <li>Monthly rental income after operations</li>
-            <li>Free 28 nights stay annually</li>
+          <div className="hero__top reveal-up">
+            <span className="hero__kicker">Nathia Gali · Galyat</span>
+            <span className="hero__coords">34.07° N · 73.38° E</span>
+          </div>
+          <div className="hero__main">
+            <h1 className="hero__title">
+              <span className="line"><span>A haven in the</span></span>
+              <span className="line hero__title-accent"><span>Highlands</span></span>
+            </h1>
+            <div className="hero__side">
+              <p className="hero__text reveal-up">Pakistan's first and largest winter resort — fully furnished hotel apartments in the pines of Nathia Gali, managed as one hotel.</p>
+              <div className="hero__ctas reveal-up">
+                <Link to="#tour" className="btn">Explore the resort <span className="btn__dot">→</span></Link>
+                <Link to="/contact" className="btn btn--ghost">Book a site visit</Link>
+              </div>
+            </div>
+          </div>
+          <ul className="hero__bar">
+            <li><strong>7,906 ft</strong><span>Above sea level</span></li>
+            <li><strong>Monthly</strong><span>Rental income after operations</span></li>
+            <li><strong>28 nights</strong><span>Free stay every year</span></li>
+            <li><strong>36 months</strong><span>Installment plan</span></li>
+            <li className="hero__scroll" aria-hidden="true"><i></i><span>Scroll</span></li>
           </ul>
-          <Link to="#tour" className="btn reveal-up">Discover more <span className="btn__dot">→</span></Link>
         </div>
-        <span className="scroll-cue">Scroll to discover</span>
       </section>
 
       {/* ============ PINNED TOUR ============ */}
