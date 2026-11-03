@@ -4,6 +4,12 @@
    ========================================================= */
 gsap.registerPlugin(ScrollTrigger);
 
+/* ---------- always start at the top on load / refresh ---------- */
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+window.scrollTo(0, 0);
+window.addEventListener('pageshow', () => window.scrollTo(0, 0));
+
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -19,8 +25,14 @@ if (!reduceMotion && window.Lenis) {
 }
 
 function scrollToTarget(target) {
-  if (lenis) lenis.scrollTo(target, { duration: 1.6 });
-  else document.querySelector(target)?.scrollIntoView({ behavior: 'smooth' });
+  if (lenis) {
+    lenis.start();
+    lenis.scrollTo(target, { duration: target === 0 ? 2 : 1.6, force: true });
+  } else if (target === 0) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    document.querySelector(target)?.scrollIntoView({ behavior: 'smooth' });
+  }
 }
 
 /* ---------- split headings into masked lines (on <br>) ---------- */
@@ -78,8 +90,10 @@ function runLoader() {
   // Displayed progress never outruns real image loading, and takes at least ~3s.
   const state = { shown: 0 };
   let loaded = 0;
+  let heroFrameLoaded = false;
+  firstFrameReady.then(() => { heroFrameLoaded = true; });
   const critical = [$('.loader__bg img'), $('.scene img')];
-  const ready = waitForImages(critical, (p) => { loaded = p; });
+  const ready = Promise.all([waitForImages(critical, (p) => { loaded = p; }), firstFrameReady]);
 
   const render = () => {
     const v = Math.round(state.shown);
@@ -97,7 +111,7 @@ function runLoader() {
     ease: 'power1.inOut',
     onUpdate() {
       // hold at 90 until the critical images are in
-      if (loaded < 1 && state.shown > 90) { state.shown = 90; tick.pause(); ready.then(() => tick.resume()); }
+      if ((loaded < 1 || !heroFrameLoaded) && state.shown > 90) { state.shown = 90; tick.pause(); ready.then(() => tick.resume()); }
       render();
     },
     onComplete: diveThroughClouds,
@@ -126,19 +140,104 @@ function runLoader() {
 function introHero(instant = false) {
   const d = instant ? 0 : 1;
   gsap.timeline()
-    .to('.hero__media video', { scale: 1, duration: 2.4 * d, ease: 'expo.out' })
+    .to('.hero__canvas', { scale: 1, duration: 2.4 * d, ease: 'expo.out' })
     .to('.hero__title .line > span', { yPercent: 0, duration: 1.2 * d, stagger: 0.09, ease: 'expo.out' }, 0.15 * d)
     .to('.hero .reveal-up', { opacity: 1, y: 0, duration: 1 * d, stagger: 0.1, ease: 'power3.out' }, 0.5 * d)
     .from('.header', { opacity: 0, y: -20, duration: 0.8 * d, ease: 'power3.out' }, 0.4 * d);
 }
 gsap.set('.hero__title .line > span', { yPercent: 110 });
 
-/* ---------- hero scroll-out ---------- */
-gsap.timeline({
-  scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true },
-})
-  .to('.hero__media', { yPercent: 18, scale: 1.08, ease: 'none' }, 0)
-  .to('.hero__content', { y: -120, opacity: 0, ease: 'none' }, 0);
+/* ---------- hero: scroll drives the aerial fly-over (canvas frame sequence) ---------- */
+const FRAME_COUNT = 84;
+// Pick by the pixels the cover-fit actually needs (portrait phones crop the middle of a wide frame).
+const neededWidth = Math.max(window.innerWidth, window.innerHeight * 16 / 9) * Math.min(window.devicePixelRatio || 1, 2);
+const frameSet = navigator.connection?.saveData || neededWidth < 1100 ? 'sm' : 'lg';
+const frameSrc = (i) => `assets/hero/${frameSet}/${String(i + 1).padStart(3, '0')}.webp`;
+const heroCanvas = $('.hero__canvas');
+const heroCtx = heroCanvas.getContext('2d');
+const frames = new Array(FRAME_COUNT);
+let wantedFrame = 0;
+let drawnFrame = -1;
+
+function sizeCanvas() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  heroCanvas.width = Math.round(heroCanvas.clientWidth * dpr);
+  heroCanvas.height = Math.round(heroCanvas.clientHeight * dpr);
+  drawnFrame = -1;
+  drawFrame(wantedFrame);
+}
+
+// Draws the requested frame, or the nearest one already downloaded.
+function drawFrame(i) {
+  wantedFrame = i;
+  let img = null;
+  for (let d = 0; d < FRAME_COUNT && !img; d++) {
+    if (frames[i - d]?.complete) img = frames[i - d];
+    else if (frames[i + d]?.complete) img = frames[i + d];
+  }
+  if (!img || !img.naturalWidth) return;
+  const key = frames.indexOf(img);
+  if (key === drawnFrame) return;
+  drawnFrame = key;
+  // object-fit: cover
+  const cw = heroCanvas.width, ch = heroCanvas.height;
+  const scale = Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
+  const w = img.naturalWidth * scale, h = img.naturalHeight * scale;
+  heroCtx.imageSmoothingQuality = 'high';
+  heroCtx.drawImage(img, (cw - w) / 2, (ch - h) / 2, w, h);
+}
+
+// Load coarse-to-fine (every 8th frame, then 4th, 2nd, all) so scrubbing works early.
+const loadOrder = [];
+[8, 4, 2, 1].forEach((step) => {
+  for (let i = 0; i < FRAME_COUNT; i += step) if (!loadOrder.includes(i)) loadOrder.push(i);
+});
+const firstFrameReady = new Promise((resolve) => {
+  let next = 0;
+  const loadNext = () => {
+    if (next >= loadOrder.length) return;
+    const i = loadOrder[next++];
+    const img = new Image();
+    img.decoding = 'async';
+    img.onload = img.onerror = () => {
+      if (i === 0) resolve();
+      if (Math.abs(i - wantedFrame) < Math.abs(drawnFrame - wantedFrame) || drawnFrame === -1) drawFrame(wantedFrame);
+      loadNext();
+    };
+    img.src = frameSrc(i);
+    frames[i] = img;
+  };
+  for (let k = 0; k < 4; k++) loadNext(); // 4 parallel downloads
+});
+firstFrameReady.then(sizeCanvas);
+window.addEventListener('resize', sizeCanvas);
+
+if (!reduceMotion) {
+  const fly = { p: 0 };
+  gsap.timeline({
+    defaults: { ease: 'none' },
+    scrollTrigger: {
+      trigger: '.hero',
+      start: 'top top',
+      end: () => `+=${window.innerHeight * 2.2}`,
+      pin: true,
+      scrub: 0.5,
+      anticipatePin: 1,
+      invalidateOnRefresh: true,
+    },
+  })
+    .to(fly, {
+      p: 1,
+      duration: 1,
+      onUpdate: () => drawFrame(Math.round(fly.p * (FRAME_COUNT - 1))),
+    }, 0)
+    .to('.hero__content', { y: -140, opacity: 0, duration: 0.25 }, 0)
+    .to('.hero > .scroll-cue', { opacity: 0, duration: 0.1 }, 0)
+    .fromTo('.hero__caption', { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.15 }, 0.3)
+    .to('.hero__caption', { opacity: 0, y: -40, duration: 0.15 }, 0.75)
+    .to('.hero__shade', { opacity: 0.35, duration: 0.3 }, 0.1)
+    .to('.hero__shade', { opacity: 1, duration: 0.15 }, 0.85);
+}
 
 /* ---------- pinned tour ---------- */
 const scenes = $$('.scene');
@@ -352,5 +451,5 @@ gsap.fromTo('.contact__media img', { scale: 1.25 }, {
   scrollTrigger: { trigger: '.contact', start: 'top bottom', end: 'top top', scrub: true },
 });
 
-window.addEventListener('load', () => ScrollTrigger.refresh());
+window.addEventListener('load', () => { window.scrollTo(0, 0); ScrollTrigger.refresh(); });
 runLoader();

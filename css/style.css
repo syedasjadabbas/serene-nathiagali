@@ -212,17 +212,25 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 /* ---------- hero ---------- */
 .hero { position: relative; height: 100vh; height: 100svh; min-height: 560px; overflow: hidden; }
 .hero__media { position: absolute; inset: 0; }
-.hero__media video { width: 100%; height: 100%; object-fit: cover; transform: scale(1.25); }
+.hero__media { background: #9aa3a8 url("../assets/img/aerial-poster.jpg") center / cover no-repeat; }
+.hero__canvas { display: block; width: 100%; height: 100%; transform: scale(1.25); }
 .hero__shade {
   position: absolute; inset: 0;
   background:
     linear-gradient(90deg, rgba(5,5,8,.62) 0%, rgba(5,5,8,.15) 55%, rgba(5,5,8,0) 100%),
     linear-gradient(0deg, rgba(5,5,8,.55) 0%, rgba(5,5,8,0) 40%);
 }
-.hero__content { position: absolute; left: var(--gutter); bottom: calc(var(--gutter) + 20px); right: var(--gutter); }
+.hero__caption {
+  position: absolute; left: 50%; bottom: 18%; transform: translateX(-50%);
+  margin: 0; text-align: center; opacity: 0; pointer-events: none;
+  text-shadow: 0 2px 30px rgba(0, 0, 0, .45);
+}
+.hero__caption span { display: block; margin-bottom: 10px; font-size: 12px; letter-spacing: .2em; text-transform: uppercase; }
+.hero__caption strong { display: block; font-size: clamp(30px, min(4.4vw, 7vh), 72px); font-weight: 300; letter-spacing: -.03em; white-space: nowrap; }
+.hero__content { position: absolute; left: var(--gutter); right: var(--gutter); top: 110px; bottom: calc(var(--gutter) + 20px); display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; }
 .hero__title {
   margin: 0 0 28px;
-  font-size: clamp(52px, 9vw, 150px); font-weight: 300; line-height: .92; letter-spacing: -.035em; text-transform: uppercase;
+  font-size: clamp(44px, min(9vw, 13.5vh), 150px); font-weight: 300; line-height: .92; letter-spacing: -.035em; text-transform: uppercase;
 }
 .hero__text { max-width: 440px; margin: 0 0 30px; font-size: 14px; line-height: 1.6; color: rgba(255, 255, 255, .82); }
 .reveal-up { opacity: 0; transform: translateY(24px); }
@@ -428,7 +436,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .contact::before { content: ""; position: absolute; inset: 0; z-index: 1; background: rgba(5, 5, 10, .45); }
 .contact__inner { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 140px var(--gutter) 60px; }
 .contact .eyebrow { color: rgba(255, 255, 255, .7); }
-.contact__title { margin: 0 0 24px; font-size: clamp(48px, 9vw, 150px); font-weight: 300; line-height: .92; letter-spacing: -.04em; text-transform: uppercase; }
+.contact__title { margin: 0 0 24px; font-size: clamp(44px, min(9vw, 15vh), 150px); font-weight: 300; line-height: .92; letter-spacing: -.04em; text-transform: uppercase; }
 .contact__inner p { margin: 0 0 36px; color: rgba(255, 255, 255, .8); font-size: 15px; }
 .phones { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 32px; margin-top: 32px; font-size: clamp(18px, 1.8vw, 24px); font-weight: 300; }
 .phones a:hover, .socials a:hover { color: var(--white); }
