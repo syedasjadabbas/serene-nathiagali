@@ -290,7 +290,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   border-top: 1px solid rgba(5, 5, 8, .15);
 }
 .figures li { padding: 28px 20px 36px 0; border-bottom: 1px solid rgba(5, 5, 8, .15); }
-.figures strong { display: block; font-size: clamp(40px, 4.6vw, 72px); font-weight: 300; letter-spacing: -.04em; line-height: 1; }
+.figures strong { display: block; font-variant-numeric: tabular-nums; font-size: clamp(40px, 4.6vw, 72px); font-weight: 300; letter-spacing: -.04em; line-height: 1; }
 .figures small { font-size: .3em; letter-spacing: .08em; margin-left: 6px; text-transform: uppercase; color: var(--stone); }
 .figures span { display: block; margin-top: 12px; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--dusk); }
 
@@ -337,7 +337,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 }
 .price li { padding: 28px 24px 0 0; }
 .price span, .price em { display: block; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: rgba(255, 255, 255, .6); font-style: normal; }
-.price strong { display: block; margin: 14px 0 10px; font-size: clamp(48px, 7vw, 110px); font-weight: 300; letter-spacing: -.045em; line-height: .9; }
+.price strong { display: block; font-variant-numeric: tabular-nums; margin: 14px 0 10px; font-size: clamp(48px, 7vw, 110px); font-weight: 300; letter-spacing: -.045em; line-height: .9; }
 .price small { font-size: 14px; letter-spacing: .1em; text-transform: uppercase; margin-right: 10px; color: var(--stone); vertical-align: top; }
 
 .payment__grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px, 3vw, 40px); }

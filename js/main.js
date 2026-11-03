@@ -22,6 +22,8 @@ if (!reduceMotion && window.Lenis) {
   gsap.ticker.add((t) => lenis.raf(t * 1000));
   gsap.ticker.lagSmoothing(0);
   lenis.stop();
+  // Re-measure the page whenever pins/spacers are recalculated, so the scroll limit never goes stale.
+  ScrollTrigger.addEventListener('refresh', () => lenis.resize());
 }
 
 function scrollToTarget(target) {
@@ -87,15 +89,15 @@ function runLoader() {
     return;
   }
 
-  // Displayed progress never outruns real image loading, and takes at least ~3s.
+  // Displayed progress never outruns real image loading, and takes at least ~1.6s.
   const state = { shown: 0 };
   let loaded = 0;
   const critical = [$('.loader__bg img'), $('.scene img')];
-  // Never wait more than 8s: the hero falls back to its poster image if frames are slow.
+  // Never wait more than 4s: the hero falls back to its poster image if frames are slow.
   let readyDone = false;
   const ready = Promise.race([
     Promise.all([waitForImages(critical, (p) => { loaded = p; }), heroFramesReady]),
-    new Promise((resolve) => setTimeout(resolve, 8000)),
+    new Promise((resolve) => setTimeout(resolve, 4000)),
   ]).then(() => { readyDone = true; });
 
   const render = () => {
@@ -106,11 +108,11 @@ function runLoader() {
     count.style.left = `${Math.max(w, count.offsetWidth)}px`;
   };
 
-  gsap.fromTo('.loader__bg img', { scale: 1.15 }, { scale: 1, duration: 4, ease: 'power2.out' });
+  gsap.fromTo('.loader__bg img', { scale: 1.15 }, { scale: 1, duration: 2.4, ease: 'power2.out' });
 
   const tick = gsap.to(state, {
     shown: 100,
-    duration: 3.2,
+    duration: 1.6,
     ease: 'power1.inOut',
     onUpdate() {
       // hold at 90 until the critical images are in
@@ -133,12 +135,12 @@ function runLoader() {
         ScrollTrigger.refresh();
       },
     });
-    tl.to(['.loader__bar', '.loader__coords', '.pin'], { autoAlpha: 0, duration: 0.5 })
-      .to('.loader__bg', { scale: 2.2, duration: 1.6 }, '<')
-      .to('.cloud', { scale: 3.2, opacity: 1, duration: 1.6, stagger: 0.03 }, '<')
-      .to('.clouds', { backgroundColor: 'rgba(255,255,255,1)', duration: 0.9 }, '-=1.0')
-      .add(() => introHero(), '-=0.2')
-      .to(loader, { autoAlpha: 0, duration: 0.9, ease: 'power2.out' }, '-=0.35');
+    tl.to(['.loader__bar', '.loader__coords', '.pin'], { autoAlpha: 0, duration: 0.3 })
+      .to('.loader__bg', { scale: 2.2, duration: 1.1 }, '<')
+      .to('.cloud', { scale: 3.2, opacity: 1, duration: 1.1, stagger: 0.02 }, '<')
+      .to('.clouds', { backgroundColor: 'rgba(255,255,255,1)', duration: 0.6 }, '-=0.7')
+      .add(() => introHero(), '-=0.15')
+      .to(loader, { autoAlpha: 0, duration: 0.6, ease: 'power2.out' }, '-=0.25');
   }
 }
 
@@ -233,7 +235,7 @@ const loadOrder = [];
 [8, 4, 2, 1].forEach((step) => {
   for (let i = 0; i < FRAME_COUNT; i += step) if (!loadOrder.includes(i)) loadOrder.push(i);
 });
-const COARSE = Math.ceil(FRAME_COUNT / 4); // every 8th + every 4th frame
+const COARSE = Math.ceil(FRAME_COUNT / 8); // every 8th frame: enough to scrub, the rest stream in
 const heroFramesReady = new Promise((resolve) => {
   let next = 0;
   let done = 0;
@@ -507,6 +509,36 @@ $$('.card').forEach((card, i) => {
     scrollTrigger: { trigger: card, start: 'top 90%' },
   });
 });
+
+/* ---------- count-up numbers ---------- */
+// Counts the first number in each element up from 0 when it scrolls into view,
+// leaving any prefix/suffix ("+", "ft", "/7", "PKR") untouched.
+function countUp(selector, trigger) {
+  $$(selector).forEach((el) => {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode()) && !/\d/.test(node.nodeValue));
+    if (!node) return;
+    const m = node.nodeValue.match(/\d[\d,]*/);
+    const target = parseInt(m[0].replace(/,/g, ''), 10);
+    const useCommas = m[0].includes(',');
+    const before = node.nodeValue.slice(0, m.index);
+    const after = node.nodeValue.slice(m.index + m[0].length);
+    const fmt = (v) => (useCommas ? Math.round(v).toLocaleString('en-US') : String(Math.round(v)));
+    if (reduceMotion) return;
+    const counter = { v: 0 };
+    node.nodeValue = before + fmt(0) + after;
+    gsap.to(counter, {
+      v: target,
+      duration: target > 1000 ? 2.2 : 1.8,
+      ease: 'power2.out',
+      onUpdate: () => { node.nodeValue = before + fmt(counter.v) + after; },
+      scrollTrigger: { trigger: trigger || el, start: 'top 85%', once: true },
+    });
+  });
+}
+countUp('.figures strong', '.figures');
+countUp('.price strong', '.price');
 
 gsap.from('.figures li', {
   y: 40, opacity: 0, duration: 1, stagger: 0.07, ease: 'power3.out',
