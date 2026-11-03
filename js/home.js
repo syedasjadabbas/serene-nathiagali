@@ -62,6 +62,10 @@ function runLoader() {
   });
 
   function diveThroughClouds() {
+    // Snap to the very top *before* the loader starts fading, while it still covers the page.
+    window.scrollTo(0, 0);
+    lenis?.scrollTo(0, { immediate: true, force: true });
+    ScrollTrigger.refresh();
     const tl = gsap.timeline({
       defaults: { ease: 'power3.inOut' },
       onComplete() {

@@ -9,9 +9,15 @@
 gsap.registerPlugin(ScrollTrigger);
 
 /* ---------- always start at the top on load / refresh ---------- */
-if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+// ScrollTrigger flips history.scrollRestoration back to the browser default after every
+// refresh unless told otherwise, which made reloads jump back to the old position.
+ScrollTrigger.clearScrollMemory('manual');
 if (location.hash) history.replaceState(null, '', location.pathname + location.search);
 window.scrollTo(0, 0);
+// While the homepage loader is up, nothing (including a late browser restore) may move the page.
+window.addEventListener('scroll', () => {
+  if (document.body.classList.contains('is-loading') && window.scrollY !== 0) window.scrollTo(0, 0);
+});
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = (s, el = document) => el.querySelector(s);
