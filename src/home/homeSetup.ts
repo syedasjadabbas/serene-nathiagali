@@ -47,7 +47,7 @@ export function homeSetup(root: HTMLElement) {
       .to($$('.hero .reveal-up', root), { opacity: 1, y: 0, duration: 1 * d, stagger: 0.1, ease: 'power3.out' }, 0.5 * d)
       // the rule draws in from the left, then the facts rise in turn
       .fromTo(bar, { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.4 * d, ease: 'expo.inOut' }, 0.55 * d)
-      .from($$('.hero__bar li', root), { opacity: 0, y: 18, duration: 0.9 * d, stagger: 0.08, ease: 'power3.out' }, 0.8 * d)
+      .from($$('.hero__bar > *', root), { opacity: 0, y: 18, duration: 0.9 * d, stagger: 0.1, ease: 'power3.out' }, 0.8 * d)
       .from(document.querySelector('.header'), { opacity: 0, y: -20, duration: 0.8 * d, ease: 'power3.out' }, 0.4 * d)
   }
 
