@@ -20,6 +20,16 @@ function waitForImages(imgs: (HTMLImageElement | null)[], onProgress: (p: number
   })))
 }
 
+// 1x1 AVIF probe: resolves true when the browser can decode AVIF
+function supportsAvif() {
+  return new Promise<boolean>((resolve) => {
+    const img = new Image()
+    img.onload = () => resolve(img.width > 0)
+    img.onerror = () => resolve(false)
+    img.src = 'data:image/avif;base64,AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUIAAADybWV0YQAAAAAAAAAoaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAGxpYmF2aWYAAAAADnBpdG0AAAAAAAEAAAAeaWxvYwAAAABEAAABAAEAAAABAAABGgAAAB0AAAAoaWluZgAAAAAAAQAAABppbmZlAgAAAAABAABhdjAxQ29sb3IAAAAAamlwcnAAAABLaXBjbwAAABRpc3BlAAAAAAAAAAIAAAACAAAAEHBpeGkAAAAAAwgICAAAAAxhdjFDgQ0MAAAAABNjb2xybmNseAACAAIAAYAAAAAXaXBtYQAAAAAAAAABAAEEAQKDBAAAACVtZGF0EgAKCBgANogQEAwgMg8f8D///8WfhwB8+ErK42A='
+  })
+}
+
 export function homeSetup(root: HTMLElement) {
   let alive = true
   const body = document.body
@@ -59,13 +69,19 @@ export function homeSetup(root: HTMLElement) {
   })()
 
   /* ---------- hero: canvas frame sequence ---------- */
-  const FRAME_COUNT = 84
+  // The hero film: three drone shots from the project's 3D animation (forest approach,
+  // ski-slope glide, rooftop crown), cut with dissolves and exported as frames.
+  const FRAME_COUNT = 107
   const FRAME_W = 1600
   // pick by the pixels the cover-fit needs (portrait phones crop the middle of a wide frame)
   const neededWidth = Math.max(window.innerWidth, window.innerHeight * 16 / 9) * Math.min(window.devicePixelRatio || 1, 2)
   const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData
   const frameSet = saveData || neededWidth < 1100 ? 'sm' : 'lg'
-  const frameSrc = (i: number) => `/assets/hero/${frameSet}/${String(i + 1).padStart(3, '0')}.webp`
+  // AVIF where the browser decodes it (about half the size of WebP), WebP otherwise
+  let frameSrc = (i: number) => `/assets/film/${frameSet}/${String(i + 1).padStart(3, '0')}.avif`
+  const avifReady = supportsAvif().then((ok) => {
+    if (!ok) frameSrc = (i: number) => `/assets/film/webp/${String(i + 1).padStart(3, '0')}.webp`
+  })
   const canvas = $<HTMLCanvasElement>('.hero__canvas', root)!
   const ctx2d = canvas.getContext('2d', { alpha: false })!
 
@@ -145,7 +161,7 @@ export function homeSetup(root: HTMLElement) {
     }
     for (let k = 0; k < parallel; k++) loadNext()
   })
-  const heroFramesReady = fetchAll(loadOrder.slice(0, COARSE), 6)
+  const heroFramesReady = avifReady.then(() => fetchAll(loadOrder.slice(0, COARSE), 6))
   heroFramesReady.then(() => { if (alive) sizeCanvas() })
   heroFramesReady
     .then(() => (alive ? preload3D() : undefined))
@@ -154,9 +170,9 @@ export function homeSetup(root: HTMLElement) {
 
   /* ---------- hero pin: fly-over, then the tour slides up over it ---------- */
   if (!reducedMotion) {
-    const FLY = 2.2, OVERLAP = 1
+    const FLY = 3.4, OVERLAP = 1
     const fly = { p: 0 }
-    gsap.timeline({
+    const heroTl = gsap.timeline({
       defaults: { ease: 'none' },
       scrollTrigger: {
         trigger: $('.hero', root), start: 'top top', end: () => `+=${window.innerHeight * (FLY + OVERLAP)}`,
@@ -166,8 +182,14 @@ export function homeSetup(root: HTMLElement) {
       .to(fly, { p: 1, duration: FLY, onUpdate: () => requestDraw(Math.round(fly.p * (FRAME_COUNT - 1))) }, 0)
       .to($$('.hero__content', root), { y: -140, opacity: 0, duration: 0.55 }, 0)
       .to($$('.hero > .scroll-cue', root), { opacity: 0, duration: 0.2 }, 0)
-      .fromTo($$('.hero__caption', root), { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.33 }, 0.66)
-      .to($$('.hero__caption', root), { opacity: 0, y: -40, duration: 0.33 }, 1.6)
+    // one caption per shot, timed to the film (shot changes at ~40% and ~69%)
+    ;[[0.1, 0.33], [0.44, 0.62], [0.74, 0.95]].forEach(([a, b], i) => {
+      const cap = $$('.hero__caption', root)[i]
+      if (!cap) return
+      heroTl.fromTo(cap, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: FLY * 0.07 }, FLY * a)
+        .to(cap, { opacity: 0, y: -40, duration: FLY * 0.07 }, FLY * b)
+    })
+    heroTl
       .to($$('.hero__shade', root), { opacity: 0.35, duration: 0.6 }, 0.2)
       .to($$('.hero__media', root), { scale: 0.9, duration: OVERLAP, ease: 'power1.in' }, FLY)
       .to($$('.hero__dim', root), { opacity: 0.8, duration: OVERLAP }, FLY)

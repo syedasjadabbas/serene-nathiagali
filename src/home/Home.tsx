@@ -41,7 +41,15 @@ export default function Home() {
         <div className="hero__shade"></div>
         <div className="hero__dim"></div>
         <p className="hero__caption" aria-hidden="true">
-          <span>Pakistan's first winter resort</span>
+          <span>Two hours from Islamabad</span>
+          <strong>Deep in the pines</strong>
+        </p>
+        <p className="hero__caption" aria-hidden="true">
+          <span>Ski slope at the door</span>
+          <strong>Pakistan's first winter resort</strong>
+        </p>
+        <p className="hero__caption" aria-hidden="true">
+          <span>Serene Heights Nathia Gali</span>
           <strong>7,906 ft above the Galyat</strong>
         </p>
         <div className="hero__grain" aria-hidden="true"></div>
