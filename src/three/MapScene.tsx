@@ -27,7 +27,7 @@ const BG = '#8a9ea8'
 export const SAT_URL = (lite: boolean) => `/assets/map/galyat-sat-${lite ? 2048 : 4096}.jpg`
 const SAT_RECT = new THREE.Vector4(-40, -44, 74, 92)
 /** Starts loading the satellite texture early (called from the 3D preloader). */
-export const preloadMapTexture = (lite: boolean) => useLoader.preload(THREE.TextureLoader, SAT_URL(lite))
+export const preloadMapTexture = (lite: boolean) => useLoader.preload(THREE.ImageBitmapLoader, SAT_URL(lite))
 const worldAt = (lat: number, lon: number, lift = 0) => {
   const [x, z] = project(lat, lon)
   return new THREE.Vector3(x, elevation(x, z) * EXAG + lift, z)
@@ -330,13 +330,17 @@ function CameraRig({ main, home }: { main: THREE.CatmullRomCurve3; home: THREE.V
 
 export function MapScene({ lite, onStop, labelEls }: { lite: boolean; onStop: (i: number) => void; labelEls: React.RefObject<(HTMLDivElement | null)[]> }) {
   use(loadDem()) // suspend until the elevation grid is in
-  const sat = useLoader(THREE.TextureLoader, SAT_URL(lite))
-  useMemo(() => {
-    sat.colorSpace = THREE.NoColorSpace // sampled as-is: the shader outputs the image's own sRGB values
-    sat.flipY = false // image row 0 is the north edge, i.e. the smallest z
-    sat.anisotropy = 8
-    sat.needsUpdate = true
-  }, [sat])
+  // decoded off the main thread as an ImageBitmap; a plain image would be decoded during the
+  // first draw, stalling the page while the 13-megapixel photo unpacks
+  const satImage = useLoader(THREE.ImageBitmapLoader, SAT_URL(lite))
+  const sat = useMemo(() => {
+    const t = new THREE.Texture(satImage)
+    t.colorSpace = THREE.NoColorSpace // sampled as-is: the shader outputs the image's own sRGB values
+    t.flipY = false // image row 0 is the north edge, i.e. the smallest z (bitmaps are never flipped)
+    t.anisotropy = 8
+    t.needsUpdate = true
+    return t
+  }, [satImage])
   const main = useMemo(() => buildRoute(ROUTE_MAIN), [])
   const abbottabad = useMemo(() => buildRoute(ROUTE_ABBOTTABAD), [])
   const home = useMemo(() => worldAt(SERENE.lat, SERENE.lon), [])

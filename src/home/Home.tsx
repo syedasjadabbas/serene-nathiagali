@@ -16,7 +16,7 @@ export default function Home() {
     <div ref={root} className="home">
       <div className="loader" id="loader" aria-hidden="true">
           <div className="loader__bg">
-            <img src="/assets/img/loader.jpg" alt="" />
+            <img src="/assets/img/loader.jpg" alt="" fetchPriority="high" />
           </div>
           <div className="clouds">
             <span className="cloud c1"></span><span className="cloud c2"></span><span className="cloud c3"></span>
@@ -85,9 +85,9 @@ export default function Home() {
       <section className="tour" id="tour">
         <div className="tour__stage">
           <div className="scene"><img src="/assets/img/renders/tower-forest-mist.jpg" alt="Serene Heights tower rising above the pine forest and mist" /></div>
-          <div className="scene"><img src="/assets/img/renders/tower-closeup.jpg" alt="Upper floors and balconies of the Serene Heights apartments" /></div>
-          <div className="scene"><img src="/assets/img/renders/rooftop-dining.jpg" alt="Rooftop restaurant with glass walls above the clouds" /></div>
-          <div className="scene"><img src="/assets/img/renders/tower-sky.jpg" alt="Serene Heights tower against the open sky" /></div>
+          <div className="scene"><img fetchPriority="low" decoding="async" src="/assets/img/renders/tower-closeup.jpg" alt="Upper floors and balconies of the Serene Heights apartments" /></div>
+          <div className="scene"><img fetchPriority="low" decoding="async" src="/assets/img/renders/rooftop-dining.jpg" alt="Rooftop restaurant with glass walls above the clouds" /></div>
+          <div className="scene"><img fetchPriority="low" decoding="async" src="/assets/img/renders/tower-sky.jpg" alt="Serene Heights tower against the open sky" /></div>
           <div className="tour__shade"></div>
 
           <div className="tour__progress"><span></span></div>
@@ -305,7 +305,7 @@ export default function Home() {
       {/* ============ CONTACT ============ */}
       <section className="contact" id="contact">
         <div className="contact__media">
-          <img src="/assets/img/renders/facade-entrance.jpg" alt="" />
+          <img loading="lazy" decoding="async" src="/assets/img/renders/facade-entrance.jpg" alt="" />
         </div>
         <div className="contact__inner">
           <span className="eyebrow">Enquire now</span>

@@ -1,5 +1,8 @@
 import { createRoot } from 'react-dom/client'
 import App from './App'
+// fonts are served with the site (latin subsets load on demand), not from Google
+import '@fontsource-variable/inter-tight/wght.css'
+import '@fontsource-variable/outfit/wght.css'
 import './styles/site.css'
 import './styles/three.css'
 import * as scroll from './lib/scroll'

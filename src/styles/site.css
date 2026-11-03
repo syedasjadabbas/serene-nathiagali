@@ -13,8 +13,8 @@
   --glass-line: rgba(255, 255, 255, .28);
   --gutter: clamp(16px, 3vw, 40px);
   --ease: cubic-bezier(.65, 0, .35, 1);
-  --font: "Inter Tight", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --display: "Outfit", "Inter Tight", system-ui, sans-serif;
+  --font: "Inter Tight Variable", "Inter Tight", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --display: "Outfit Variable", "Outfit", system-ui, sans-serif;
   --floral: #FEFAEF;
 }
 

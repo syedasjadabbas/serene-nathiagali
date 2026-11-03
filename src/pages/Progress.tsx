@@ -9,7 +9,7 @@ export default function Progress() {
     <div ref={root}>
       {/* ============ PAGE HERO ============ */}
       <section className="page-hero">
-        <div className="page-hero__media"><img src="/assets/img/renders/snow-tower.jpg" alt="" /></div>
+        <div className="page-hero__media"><img fetchPriority="high" src="/assets/img/renders/snow-tower.jpg" alt="" /></div>
         <div className="page-hero__content">
           <nav className="crumbs reveal-up" aria-label="Breadcrumb"><Link to="/">Home</Link><span>/</span><span>Progress</span></nav>
           <h1 className="split">Rising in<br />the pines</h1>
@@ -28,7 +28,7 @@ export default function Progress() {
 
       {/* ============ ENQUIRE ============ */}
       <section className="contact" id="enquire">
-        <div className="contact__media"><img src="/assets/img/renders/tower-sky.jpg" alt="" /></div>
+        <div className="contact__media"><img loading="lazy" decoding="async" src="/assets/img/renders/tower-sky.jpg" alt="" /></div>
         <div className="contact__inner">
           <span className="eyebrow">Enquire now</span>
           <h2 className="contact__title split">See it<br />in person</h2>

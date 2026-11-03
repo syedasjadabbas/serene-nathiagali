@@ -9,7 +9,7 @@ export default function Contact() {
     <div ref={root}>
       {/* ============ PAGE HERO ============ */}
       <section className="page-hero">
-        <div className="page-hero__media"><img src="/assets/img/renders/tower-sky.jpg" alt="" /></div>
+        <div className="page-hero__media"><img fetchPriority="high" src="/assets/img/renders/tower-sky.jpg" alt="" /></div>
         <div className="page-hero__content">
           <nav className="crumbs reveal-up" aria-label="Breadcrumb"><Link to="/">Home</Link><span>/</span><span>Contact</span></nav>
           <h1 className="split">Let’s talk</h1>
@@ -65,7 +65,7 @@ export default function Contact() {
       </section>
 
       <section className="location">
-        <div className="location__media"><img src="/assets/img/renders/aerial-clouds.jpg" alt="" /></div>
+        <div className="location__media"><img loading="lazy" decoding="async" src="/assets/img/renders/aerial-clouds.jpg" alt="" /></div>
         <div className="location__inner">
           <span className="eyebrow">Nearby Serene Heights</span>
           <h2 className="split">Find us in<br />Nathia Gali</h2>
