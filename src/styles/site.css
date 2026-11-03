@@ -241,6 +241,22 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   .tour { margin-top: -100vh; z-index: 2; }
   .tour__stage { box-shadow: 0 -30px 80px rgba(0, 0, 0, .45); }
 }
+/* chapter counter on the right while the film plays */
+.hero__hud::before {
+  content: ""; position: absolute; inset: -120px -60px -120px -160px; z-index: -1;
+  background: radial-gradient(closest-side, rgba(5, 5, 8, .45), rgba(5, 5, 8, 0));
+}
+.hero__hud {
+  position: absolute; right: var(--gutter); top: 50%; transform: translateY(-50%); z-index: 2;
+  display: grid; justify-items: end; gap: 10px; opacity: 0; pointer-events: none;
+  text-shadow: 0 1px 14px rgba(5, 5, 8, .6);
+}
+.hero__hud-count { font-size: 14px; letter-spacing: .14em; color: rgba(255, 255, 255, .7); }
+.hero__hud-count b { font-weight: 300; color: var(--white); font-size: clamp(30px, 2.6vw, 42px); letter-spacing: -.02em; margin-right: 4px; }
+.hero__hud-name { font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--white); }
+.hero__hud-line { position: relative; display: block; width: 2px; height: 160px; margin-top: 10px; background: rgba(255, 255, 255, .22); }
+.hero__hud-line > i { position: absolute; inset: 0; background: var(--white); transform-origin: top; transform: scaleY(0); }
+@media (max-width: 600px) { .hero__hud { top: auto; bottom: 28%; } .hero__hud-line { height: 80px; } }
 .hero__caption {
   position: absolute; left: 50%; bottom: 18%; transform: translateX(-50%);
   margin: 0; text-align: center; opacity: 0; pointer-events: none;

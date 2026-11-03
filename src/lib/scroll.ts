@@ -46,9 +46,18 @@ export function jumpTo(y: number) {
   if (lenis) { lenis.resize(); lenis.scrollTo(y, { immediate: true, force: true }) }
 }
 
+// Locking must not touch `overflow`: hiding the page's overflow breaks position: sticky,
+// so sticky sections (the 3D map) vanish for as long as the lock lasts.
+const SCROLL_KEYS = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '])
+const blockScroll = (e: Event) => e.preventDefault()
+const blockKeys = (e: KeyboardEvent) => { if (SCROLL_KEYS.has(e.key)) e.preventDefault() }
+
 export function lockScroll(locked: boolean) {
   if (lenis) locked ? lenis.stop() : lenis.start()
-  document.documentElement.style.overflow = locked ? 'hidden' : ''
+  const method = locked ? 'addEventListener' : 'removeEventListener'
+  window[method]('wheel', blockScroll, { passive: false } as AddEventListenerOptions)
+  window[method]('touchmove', blockScroll, { passive: false } as AddEventListenerOptions)
+  window[method]('keydown', blockKeys as EventListener)
 }
 
 export { gsap, ScrollTrigger }

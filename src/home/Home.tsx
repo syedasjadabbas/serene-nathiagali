@@ -53,6 +53,11 @@ export default function Home() {
           <strong>7,906 ft above the Galyat</strong>
         </p>
         <div className="hero__grain" aria-hidden="true"></div>
+        <div className="hero__hud" aria-hidden="true">
+          <span className="hero__hud-count"><b>01</b> / 03</span>
+          <span className="hero__hud-name">The forest</span>
+          <i className="hero__hud-line"><i></i></i>
+        </div>
         <div className="hero__content">
           <div className="hero__top reveal-up">
             <span className="hero__kicker">Nathia Gali · Galyat</span>

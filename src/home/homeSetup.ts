@@ -200,18 +200,39 @@ export function homeSetup(root: HTMLElement) {
   window.addEventListener('resize', sizeCanvas)
 
   /* ---------- hero pin: fly-over, then the tour slides up over it ---------- */
+  /* ---------- chapter counter for the film's three shots ---------- */
+  const CHAPTERS = [[0, 'The forest'], [0.4, 'The slope'], [0.69, 'The crown']] as const
+  const hudCount = $('.hero__hud-count b', root), hudName = $('.hero__hud-name', root)
+  let chapter = 0
+  const updateHud = (p: number) => {
+    const c = CHAPTERS.reduce((acc, [at], i) => (p >= at ? i : acc), 0)
+    if (c === chapter || !hudCount || !hudName) return
+    chapter = c
+    gsap.timeline()
+      .to([hudCount, hudName], { opacity: 0, y: -8, duration: 0.2, ease: 'power2.in' })
+      .add(() => { hudCount.textContent = String(c + 1).padStart(2, '0'); hudName.textContent = CHAPTERS[c][1] })
+      .fromTo([hudCount, hudName], { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' })
+  }
+
   if (!reducedMotion) {
-    const FLY = 3.4, OVERLAP = 1
+    // 7.5 screens of scrolling for the 15 s film: slow enough to feel like moving through the place
+    const FLY = 7.5, OVERLAP = 1
     const fly = { p: 0 }
     const heroTl = gsap.timeline({
       defaults: { ease: 'none' },
       scrollTrigger: {
         trigger: $('.hero', root), start: 'top top', end: () => `+=${window.innerHeight * (FLY + OVERLAP)}`,
-        pin: true, pinSpacing: true, scrub: 0.8, anticipatePin: 1, invalidateOnRefresh: true,
+        pin: true, pinSpacing: true, scrub: 1.2, anticipatePin: 1, invalidateOnRefresh: true,
       },
     })
-      .to(fly, { p: 1, duration: FLY, onUpdate: () => requestDraw(fly.p * (FRAME_COUNT - 1)) }, 0)
-      .to($$('.hero__content', root), { y: -140, opacity: 0, duration: 0.55 }, 0)
+      .to(fly, { p: 1, duration: FLY, onUpdate: () => { requestDraw(fly.p * (FRAME_COUNT - 1)); updateHud(fly.p) } }, 0)
+      .to($$('.hero__content', root), { y: -140, opacity: 0, duration: FLY * 0.08 }, 0)
+      // a slow push-in across the whole film, like a dolly move
+      .fromTo(canvas, { scale: 1 }, { scale: 1.1, duration: FLY, immediateRender: false }, 0)
+      // chapter counter: fades in as the intro text leaves, its line fills with the film
+      .fromTo($$('.hero__hud', root), { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: FLY * 0.05 }, FLY * 0.06)
+      .fromTo($$('.hero__hud-line > i', root), { scaleY: 0 }, { scaleY: 1, duration: FLY }, 0)
+      .to($$('.hero__hud', root), { opacity: 0, duration: FLY * 0.04 }, FLY * 0.96)
       .to($$('.hero > .scroll-cue', root), { opacity: 0, duration: 0.2 }, 0)
     // one caption per shot, timed to the film (shot changes at ~40% and ~69%)
     ;[[0.1, 0.33], [0.44, 0.62], [0.74, 0.95]].forEach(([a, b], i) => {
