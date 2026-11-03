@@ -1,9 +1,13 @@
 import { useRef } from 'react'
 import { Link } from '../lib/router'
+import { openLightbox } from '../lib/lightbox'
 import { usePage } from '../lib/usePage'
 import { homeSetup } from './homeSetup'
 import { MapSection } from '../components/MapSection'
 import { TowerModel } from '../components/TowerModel'
+
+const playWalkthrough = () => openLightbox(
+  '<video src="/assets/video/walkthrough.mp4" poster="/assets/video/walkthrough.jpg" controls autoplay playsinline></video>')
 
 export default function Home() {
   const root = useRef<HTMLDivElement>(null)
@@ -62,15 +66,18 @@ export default function Home() {
           <div className="hero__main">
             <span className="hero__kicker reveal-up">Nathia Gali · 7,906 ft</span>
             <h1 className="hero__title">
-              <span className="line"><span>A haven in the</span></span>
-              <span className="line hero__title-accent"><span>highlands</span></span>
+              <span className="line"><span>A Haven in the</span></span>
+              <span className="line"><span>Highlands</span></span>
             </h1>
+            <div className="hero__bar">
+              <p className="hero__lede">Pakistan’s first winter resort — fully furnished hotel apartments, managed as one hotel.</p>
+              <div className="hero__actions">
+                <Link to="#tour" className="hero__btn hero__btn--solid">Explore the Resort <span aria-hidden="true">→</span></Link>
+                <button type="button" className="hero__btn hero__btn--play" onClick={playWalkthrough}><i aria-hidden="true" />Watch Video</button>
+              </div>
+            </div>
           </div>
-          <div className="hero__bar">
-            <p className="hero__lede">Pakistan’s first winter resort — fully furnished hotel apartments, managed as one hotel.</p>
-            <Link to="#tour" className="btn hero__cta">Explore the resort <span className="btn__dot">→</span></Link>
-            <span className="hero__scroll" aria-hidden="true"><i></i>Scroll</span>
-          </div>
+          <span className="hero__scroll" aria-hidden="true">Scroll <b>↓</b></span>
         </div>
       </section>
 
