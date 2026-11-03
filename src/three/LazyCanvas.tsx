@@ -1,6 +1,7 @@
 import { Component, Suspense, lazy, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react'
 import type { CanvasProps } from '@react-three/fiber'
 import { hasWebGL } from '../lib/device'
+import { whenPreloaded } from './preload'
 
 const CanvasHost = lazy(() => import('./CanvasHost'))
 
@@ -12,15 +13,18 @@ class SceneBoundary extends Component<{ fallback: ReactNode; children: ReactNode
 }
 
 /**
- * 3D canvas that loads the engine and builds its scene as it nears the screen, animates only
- * while visible, and otherwise renders on demand. Devices without WebGL get `fallback`.
+ * 3D canvas that builds its scene ahead of time (`premount`: as soon as the 3D code has been
+ * preloaded in the background) or as it nears the screen, whichever comes first. It animates only
+ * while visible and otherwise renders on demand. Devices without WebGL get `fallback`.
  */
-export function LazyCanvas<P extends object>({ scene, sceneProps, canvas = {}, fallback = null, warmup = '200px' }: {
+export function LazyCanvas<P extends object>({ scene, sceneProps, canvas = {}, fallback = null, warmup = '200px', premount = false }: {
   scene: ComponentType<P>
   sceneProps: P
   canvas?: Omit<CanvasProps, 'children'>
   fallback?: ReactNode
   warmup?: string
+  /** build the scene in the background once preloaded, instead of waiting to near the screen */
+  premount?: boolean
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
@@ -39,6 +43,12 @@ export function LazyCanvas<P extends object>({ scene, sceneProps, canvas = {}, f
     ahead.observe(el)
     return () => { io.disconnect(); ahead.disconnect() }
   }, [warmup, supported])
+  useEffect(() => {
+    if (!supported || !premount) return
+    let live = true
+    whenPreloaded().then(() => { if (live) setMounted(true) })
+    return () => { live = false }
+  }, [supported, premount])
   return (
     <div ref={ref} className="canvas-wrap" aria-hidden="true">
       {!supported ? fallback : mounted && (

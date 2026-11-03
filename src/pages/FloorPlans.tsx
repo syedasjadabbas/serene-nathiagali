@@ -2,6 +2,10 @@ import { useRef } from 'react'
 import { Link } from '../lib/router'
 import { usePage } from '../lib/usePage'
 import { TowerModel } from '../components/TowerModel'
+import { preload3D } from '../three/preload'
+
+// this page opens on the 3D model: start loading it before React has even rendered
+preload3D()
 
 export default function FloorPlans() {
   const root = useRef<HTMLDivElement>(null)

@@ -1,5 +1,6 @@
 import { gsap, ScrollTrigger, lenis, jumpTo, reducedMotion } from '../lib/scroll'
 import { revealPage } from '../lib/router'
+import { preload3D } from '../three/preload'
 
 // Homepage: loader → cloud dive → scroll-driven hero fly-over (canvas frame sequence) → pinned tour.
 // Runs inside the page's GSAP context; returns a cleanup for non-GSAP resources.
@@ -108,20 +109,26 @@ export function homeSetup(root: HTMLElement) {
   const loadOrder: number[] = []
   ;[8, 4, 2, 1].forEach((step) => { for (let i = 0; i < FRAME_COUNT; i += step) if (!loadOrder.includes(i)) loadOrder.push(i) })
   const COARSE = Math.ceil(FRAME_COUNT / 8)
-  const heroFramesReady = new Promise<void>((resolve) => {
+  // Downloads run in three steps so the 3D scenes further down are ready early:
+  // 1. the coarse hero frames (enough to scrub), 2. the map and tower scenes, 3. the remaining frames.
+  const fetchFrame = (i: number) => fetch(frameSrc(i))
+    .then((r) => r.blob())
+    .then((b) => { blobs[i] = b; if (Math.abs(i - wantedFrame) <= DECODE_AHEAD) decodeAround(wantedFrame) })
+    .catch(() => {})
+  const fetchAll = (list: number[], parallel: number) => new Promise<void>((resolve) => {
     let next = 0, done = 0
+    if (!list.length) { resolve(); return }
     const loadNext = () => {
-      if (!alive || next >= loadOrder.length) return
-      const i = loadOrder[next++]
-      fetch(frameSrc(i))
-        .then((r) => r.blob())
-        .then((b) => { blobs[i] = b; if (Math.abs(i - wantedFrame) <= DECODE_AHEAD) decodeAround(wantedFrame) })
-        .catch(() => {})
-        .finally(() => { if (++done === COARSE) resolve(); loadNext() })
+      if (!alive || next >= list.length) return
+      fetchFrame(list[next++]).finally(() => { if (++done === list.length) resolve(); loadNext() })
     }
-    for (let k = 0; k < 6; k++) loadNext()
+    for (let k = 0; k < parallel; k++) loadNext()
   })
+  const heroFramesReady = fetchAll(loadOrder.slice(0, COARSE), 6)
   heroFramesReady.then(() => { if (alive) sizeCanvas() })
+  heroFramesReady
+    .then(() => (alive ? preload3D() : undefined))
+    .then(() => { if (alive) void fetchAll(loadOrder.slice(COARSE), 6) })
   window.addEventListener('resize', sizeCanvas)
 
   /* ---------- hero pin: fly-over, then the tour slides up over it ---------- */

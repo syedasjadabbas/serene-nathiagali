@@ -42,7 +42,7 @@ export function TowerModel() {
         <div className="sel-canvas">
           <LazyCanvas scene={SelectorScene}
             sceneProps={{ spin, tower, floor, hover, onHover: setHover, onPick: pickFloor, onTower: pickTower, labelEls }}
-            warmup="1500px" canvas={{ dpr: [1, 1.75], camera: { fov: 36, position: [4, 8.5, 21] }, gl: { antialias: true } }}
+            warmup="1500px" premount canvas={{ dpr: [1, 1.75], camera: { fov: 36, position: [4, 8.5, 21] }, gl: { antialias: true } }}
             fallback={<div className="sel-fallback"><img src="/assets/img/renders/tower-forest-mist-sm.jpg" alt="Serene Heights towers" /><p>The 3D model isn’t available on this device. Choose a tower and floor from the list.</p></div>} />
           <div className="sel-labels" hidden={!webgl}>
             {TOWER_NAMES.map((n, t) => (
