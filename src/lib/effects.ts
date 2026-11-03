@@ -69,9 +69,13 @@ function countUp(root: ParentNode, selector: string, trigger: string) {
 
 /** Fades/lifts a group of elements in when their container scrolls into view. */
 function revealGroup(root: ParentNode, itemSel: string, from: gsap.TweenVars = { y: 50 }, start = 'top 88%') {
-  const parents = new Set($$(itemSel, root).map((el) => el.parentElement!))
+  // an element matched by two groups would get two from-tweens, and the second would record the
+  // first one's hidden state as its end point, leaving the element stuck almost invisible
+  const fresh = $$(itemSel, root).filter((el) => !el.dataset.revealed)
+  fresh.forEach((el) => { el.dataset.revealed = '1' })
+  const parents = new Set(fresh.map((el) => el.parentElement!))
   parents.forEach((parent) => {
-    const items = $$(itemSel, parent).filter((el) => el.parentElement === parent)
+    const items = fresh.filter((el) => el.parentElement === parent)
     gsap.from(items, {
       ...from, opacity: 0, duration: 1.1, stagger: 0.07, ease: 'power3.out',
       scrollTrigger: { trigger: parent, start },

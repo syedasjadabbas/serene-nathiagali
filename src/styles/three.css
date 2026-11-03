@@ -52,6 +52,11 @@
   .hscroll__intro { flex-basis: 100%; padding: 0 0 24px; }
   .hscroll__card { flex: 1 1 calc(50% - 10px); }
 }
+@media (max-width: 600px) {
+  .hscroll__card figcaption { left: 12px; right: 12px; bottom: 12px; gap: 6px; font-size: 16px; line-height: 1.05; }
+  .hscroll__card figcaption span { font-size: 9px; letter-spacing: .12em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hscroll__card::after { background: linear-gradient(to top, rgba(8,10,14,.88), rgba(8,10,14,0) 62%); }
+}
 
 /* ---------- distances block under the map ---------- */
 .distances-block .distances { margin-top: 0; }
@@ -92,6 +97,11 @@
 .map-label.home .map-dot { background: #ffd79a; box-shadow: 0 0 0 5px rgba(255,215,154,.25), 0 0 24px rgba(255,215,154,.75); }
 .map-label.home .map-name { font-size: 20px; color: #ffe7c4; text-shadow: 0 1px 3px rgba(0,0,0,.6), 0 2px 18px rgba(0,0,0,.9); }
 .map-anchor.active .map-label.home .map-name { font-size: 26px; }
+@media (max-width: 1100px) {
+  .map-foot { flex-direction: column; align-items: stretch; gap: 16px; }
+  .map-steps { max-width: none; }
+  .map-steps li { letter-spacing: .08em; }
+}
 @media (max-width: 760px) {
   .map-note { display: none; }
   .map-label.home .map-note { display: block; }
@@ -123,6 +133,11 @@
 .seg button:hover { color: var(--white); }
 .seg button[aria-pressed='true']:hover { color: var(--ink); }
 .seg button:focus-visible { outline: 2px solid var(--sage); outline-offset: -2px; }
+/* small phones: the four options share the width on one line */
+@media (max-width: 420px) {
+  .seg { display: flex; width: auto; flex-wrap: nowrap; }
+  .seg button { flex: 1; text-align: center; white-space: nowrap; padding: 9px 6px; letter-spacing: .06em; font-size: 10.5px; }
+}
 .panel-empty { display: grid; gap: 14px; }
 .panel-empty h3, .floor-view h3 { margin: 0; font-size: clamp(22px, 2vw, 30px); font-weight: 300; letter-spacing: -.02em; }
 .panel-empty p, .fine { margin: 0; color: var(--muted); line-height: 1.6; font-size: 14px; }
