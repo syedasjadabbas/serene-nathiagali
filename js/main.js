@@ -348,6 +348,32 @@ tabs.addEventListener('click', (e) => {
 $('.plans__open').addEventListener('click', () => openLightbox(`<img src="${planImg.src}" alt="${planImg.alt}">`));
 showFloor(0);
 
+/* ---------- gallery ---------- */
+const shots = [
+  ['sunset-rooftop', 'Rooftop terraces at sunset', 'big'],
+  ['night-facade', 'Serene Heights lit up on a snowy night', 'tall'],
+  ['snow-tower', 'The tower in winter'],
+  ['snow-aerial-sunset', 'Aerial view over snowy pines at dusk'],
+  ['rooftop-terrace', 'Rooftop dining terrace'],
+  ['snow-valley', 'Tower above the snowy valley'],
+  ['rooftop-lounge', 'Sunlit rooftop lounge', 'wide'],
+  ['snow-street', 'Arrival road in the snow'],
+  ['rooftop-view', 'Rooftop restaurant overlooking the pines'],
+  ['snow-facade', 'Facade in fresh snow'],
+];
+$('#shots').innerHTML = shots.map(([id, alt, size = '']) => `
+  <button class="shot ${size}" data-full="assets/img/renders/${id}.jpg" aria-label="View full size: ${alt}">
+    <img src="assets/img/renders/${id}-sm.jpg" alt="${alt}" loading="lazy">
+  </button>`).join('');
+$('#shots').addEventListener('click', (e) => {
+  const b = e.target.closest('.shot');
+  if (b) openLightbox(`<img src="${b.dataset.full}" alt="${$('img', b).alt}">`);
+});
+gsap.from('.shot', {
+  y: 60, opacity: 0, duration: 1.1, stagger: 0.05, ease: 'power3.out',
+  scrollTrigger: { trigger: '.shots', start: 'top 85%' },
+});
+
 /* ---------- payment calculator ---------- */
 const PRICE_PER_SQFT = 40000;
 const pkr = (n) => 'PKR ' + Math.round(n).toLocaleString('en-PK');

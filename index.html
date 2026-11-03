@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=5">
+  <link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body class="is-loading">
 
@@ -53,6 +53,7 @@
       <li><a href="#top">Home</a></li>
       <li><a href="#tour">The Resort</a></li>
       <li><a href="#project">The Project</a></li>
+      <li><a href="#gallery">Gallery</a></li>
       <li><a href="#amenities">Amenities</a></li>
       <li><a href="#floor-plans">Floor Plans</a></li>
       <li><a href="#payment-plan">Payment Plan</a></li>
@@ -94,10 +95,10 @@
     <!-- ============ PINNED TOUR ============ -->
     <section class="tour" id="tour">
       <div class="tour__stage">
-        <div class="scene"><img src="assets/img/hero.jpg" alt="Serene Heights towers among the pines"></div>
+        <div class="scene"><img src="assets/img/renders/tower-forest-mist.jpg" alt="Serene Heights tower rising above the pine forest and mist"></div>
         <div class="scene"><img src="assets/img/frame1.jpg" alt="Fully furnished hotel apartment interior"></div>
-        <div class="scene"><img src="assets/img/home3.jpg" alt="Infinity pool overlooking the valley"></div>
-        <div class="scene"><img src="assets/img/frame4.jpg" alt="Serene Heights at night under the stars"></div>
+        <div class="scene"><img src="assets/img/renders/rooftop-dining.jpg" alt="Rooftop restaurant with glass walls above the clouds"></div>
+        <div class="scene"><img src="assets/img/renders/tower-sky.jpg" alt="Serene Heights tower against the open sky"></div>
         <div class="tour__shade"></div>
 
         <div class="tour__progress"><span></span></div>
@@ -117,8 +118,8 @@
           </article>
           <article class="caption">
             <span class="caption__num">03</span>
-            <h2>Infinity above the valley</h2>
-            <p>A heated infinity pool open year-round, with sauna, jacuzzi and massage — and The Coffee, Tea &amp; Company rooftop restaurant at 7,906 ft.</p>
+            <h2>Dining above the clouds</h2>
+            <p>The Coffee, Tea &amp; Company rooftop restaurant at 7,906 ft — plus a heated infinity pool open year-round, sauna, jacuzzi and massage.</p>
             <a href="#amenities" class="btn btn--sm">Amenities <span class="btn__dot">→</span></a>
           </article>
           <article class="caption">
@@ -157,7 +158,7 @@
       <section class="residences" id="residences">
         <div class="cards">
           <a class="card" href="#contact">
-            <div class="card__img"><img src="assets/img/opr1.jpg" alt="Serene Heights tower with rooftop pool"></div>
+            <div class="card__img"><img src="assets/img/renders/aerial-pool-sm.jpg" alt="Aerial view of the tower with its rooftop pool" loading="lazy"></div>
             <div class="card__body">
               <span class="card__num">01</span>
               <h3>Hotel Apartments</h3>
@@ -173,7 +174,7 @@
             </div>
           </a>
           <a class="card" href="#contact">
-            <div class="card__img"><img src="assets/img/frame6.jpg" alt="Pine forest around the resort"></div>
+            <div class="card__img"><img src="assets/img/renders/tower-closeup-sm.jpg" alt="Serene Heights tower in the pines" loading="lazy"></div>
             <div class="card__body">
               <span class="card__num">03</span>
               <h3>Co-ownership</h3>
@@ -183,6 +184,16 @@
         </div>
       </section>
     </div>
+
+    <!-- ============ GALLERY ============ -->
+    <section class="gallery" id="gallery">
+      <div class="section-head">
+        <span class="eyebrow">Gallery</span>
+        <h2 class="split">Every season,<br>every angle</h2>
+        <p class="section-head__text">Renders of Serene Heights through snow, sunset and night. Tap any image to view it full size.</p>
+      </div>
+      <div class="shots" id="shots"></div>
+    </section>
 
     <!-- ============ AMENITIES ============ -->
     <section class="amenities" id="amenities">
@@ -282,7 +293,7 @@
     <!-- ============ LOCATION ============ -->
     <section class="location" id="location">
       <div class="location__media">
-        <img src="assets/img/location.jpg" alt="">
+        <img src="assets/img/renders/aerial-clouds.jpg" alt="">
       </div>
       <div class="location__inner">
         <span class="eyebrow">Location</span>
@@ -301,7 +312,7 @@
     <!-- ============ CONTACT ============ -->
     <section class="contact" id="contact">
       <div class="contact__media">
-        <img src="assets/img/frame4.jpg" alt="">
+        <img src="assets/img/renders/facade-entrance.jpg" alt="">
       </div>
       <div class="contact__inner">
         <span class="eyebrow">Enquire now</span>
@@ -334,6 +345,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
-  <script src="js/main.js?v=6"></script>
+  <script src="js/main.js?v=7"></script>
 </body>
 </html>
