@@ -9,9 +9,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=10">
+  <link rel="stylesheet" href="css/style.css?v=17">
 </head>
-<body class="is-loading">
+<body class="is-loading" data-defer-effects>
+  <div class="curtain" style="opacity:0;visibility:hidden" aria-hidden="true"></div>
 
   <!-- ============ PRELOADER: aerial over the Galyat ============ -->
   <div class="loader" id="loader" aria-hidden="true">
@@ -44,22 +45,21 @@
       <img class="logo__light" src="assets/img/logo.png" alt="Serene Heights Hotels &amp; Resorts">
       <img class="logo__dark" src="assets/img/logo-green.png" alt="">
     </a>
-    <a href="#contact" class="pill">Enquire</a>
+    <a href="contact.html" class="pill">Enquire</a>
   </header>
 
   <!-- ============ MENU OVERLAY ============ -->
   <nav class="menu" id="menu" aria-hidden="true">
     <ul>
-      <li><a href="#top">Home</a></li>
-      <li><a href="#tour">The Resort</a></li>
-      <li><a href="#project">The Project</a></li>
-      <li><a href="#gallery">Gallery</a></li>
-      <li><a href="#amenities">Amenities</a></li>
-      <li><a href="#floor-plans">Floor Plans</a></li>
-      <li><a href="#payment-plan">Payment Plan</a></li>
-      <li><a href="#progress">Progress</a></li>
-      <li><a href="#location">Location</a></li>
-      <li><a href="#contact">Enquire</a></li>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="amenities.html">Amenities</a></li>
+      <li><a href="floor-plans.html">Floor Plans</a></li>
+      <li><a href="payment-plan.html">Payment Plan</a></li>
+      <li><a href="smart-property-unit.html">Smart Property Unit</a></li>
+      <li><a href="progress.html">Progress</a></li>
+      <li><a href="gallery.html">Gallery</a></li>
+      <li><a href="contact.html">Contact</a></li>
     </ul>
     <p class="menu__foot">042-111-111-744 &nbsp;·&nbsp; info@sereneheightsnathiagali.com</p>
   </nav>
@@ -109,25 +109,25 @@
             <span class="caption__num">01</span>
             <h2>Three towers in the pines</h2>
             <p>150+ apartments across three towers on a 30+ kanal campus — designed on a downhill site to open every home onto the valley.</p>
-            <a href="#project" class="btn btn--sm">Know more <span class="btn__dot">→</span></a>
+            <a href="about.html" class="btn btn--sm">About the project <span class="btn__dot">→</span></a>
           </article>
           <article class="caption">
             <span class="caption__num">02</span>
             <h2>Refined, ready to live</h2>
             <p>1, 2 &amp; 3 bed hotel apartments, fully furnished. Limestone and marble finishes, double-glazed UPVC windows and heated flooring.</p>
-            <a href="#project" class="btn btn--sm">Know more <span class="btn__dot">→</span></a>
+            <a href="floor-plans.html" class="btn btn--sm">Floor plans <span class="btn__dot">→</span></a>
           </article>
           <article class="caption">
             <span class="caption__num">03</span>
             <h2>Dining above the clouds</h2>
             <p>The Coffee, Tea &amp; Company rooftop restaurant at 7,906 ft — plus a heated infinity pool open year-round, sauna, jacuzzi and massage.</p>
-            <a href="#amenities" class="btn btn--sm">Amenities <span class="btn__dot">→</span></a>
+            <a href="amenities.html" class="btn btn--sm">Amenities <span class="btn__dot">→</span></a>
           </article>
           <article class="caption">
             <span class="caption__num">04</span>
             <h2>Ownership that earns</h2>
             <p>Fully managed hotel apartments with monthly rental income after operations, 28 free nights every year and zero maintenance charges.</p>
-            <a href="#contact" class="btn btn--sm">Enquire <span class="btn__dot">→</span></a>
+            <a href="payment-plan.html" class="btn btn--sm">Payment plan <span class="btn__dot">→</span></a>
           </article>
         </div>
 
@@ -158,7 +158,7 @@
       <!-- ============ RESIDENCES ============ -->
       <section class="residences" id="residences">
         <div class="cards">
-          <a class="card" href="#contact">
+          <a class="card" href="floor-plans.html">
             <div class="card__img"><img src="assets/img/renders/aerial-pool-sm.jpg" alt="Aerial view of the tower with its rooftop pool" loading="lazy"></div>
             <div class="card__body">
               <span class="card__num">01</span>
@@ -166,7 +166,7 @@
               <p>Fully furnished 1, 2 and 3 bed apartments — for your own mountain getaways, and managed for rental income the rest of the year.</p>
             </div>
           </a>
-          <a class="card" href="#contact">
+          <a class="card" href="payment-plan.html">
             <div class="card__img"><img src="assets/img/renders/night-facade-sm.jpg" alt="Serene Heights hotel entrance lit up at night" loading="lazy"></div>
             <div class="card__body">
               <span class="card__num">02</span>
@@ -174,7 +174,7 @@
               <p>Serviced rooms within the resort's hospitality programme, with daily housekeeping and 24/7 front desk.</p>
             </div>
           </a>
-          <a class="card" href="#contact">
+          <a class="card" href="smart-property-unit.html">
             <div class="card__img"><img src="assets/img/renders/snow-tower-sm.jpg" alt="Serene Heights tower in winter" loading="lazy"></div>
             <div class="card__body">
               <span class="card__num">03</span>
@@ -193,7 +193,8 @@
         <h2 class="split">Every season,<br>every angle</h2>
         <p class="section-head__text">Renders of Serene Heights through snow, sunset and night. Tap any image to view it full size.</p>
       </div>
-      <div class="shots" id="shots"></div>
+      <div class="shots" id="shots" data-limit="10"></div>
+      <a class="link-more" href="gallery.html">View full gallery <span>→</span></a>
     </section>
 
     <!-- ============ AMENITIES ============ -->
@@ -217,6 +218,7 @@
         <img src="assets/img/desire3.jpg" alt="Luxury hotel suite" loading="lazy">
         <img src="assets/img/desire16.jpg" alt="24/7 CCTV surveillance" loading="lazy">
       </div>
+      <a class="link-more" href="amenities.html">All amenities <span>→</span></a>
     </section>
 
     <!-- ============ FLOOR PLANS ============ -->
@@ -234,6 +236,7 @@
           </button>
           <figcaption><span id="planName">Ground floor</span><span id="planNote"></span></figcaption>
         </figure>
+      <a class="link-more" href="floor-plans.html">Floor plans page <span>→</span></a>
       </section>
     </div>
 
@@ -289,6 +292,7 @@
         <p class="section-head__text">From groundbreaking in December 2021 to today — watch every milestone on site.</p>
       </div>
       <div class="timeline" id="timeline"></div>
+      <a class="link-more" href="progress.html">Full progress timeline <span>→</span></a>
     </section>
 
     <!-- ============ LOCATION ============ -->
@@ -346,6 +350,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
-  <script src="js/main.js?v=15"></script>
+  <script src="js/common.js?v=17"></script>
+  <script src="js/home.js?v=17"></script>
 </body>
 </html>
