@@ -10,3 +10,7 @@ desktop.ini
 
 # Logs
 *.log
+
+# Build
+node_modules/
+dist/
