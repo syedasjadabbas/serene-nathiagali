@@ -90,10 +90,13 @@ function runLoader() {
   // Displayed progress never outruns real image loading, and takes at least ~3s.
   const state = { shown: 0 };
   let loaded = 0;
-  let heroFrameLoaded = false;
-  heroFramesReady.then(() => { heroFrameLoaded = true; });
   const critical = [$('.loader__bg img'), $('.scene img')];
-  const ready = Promise.all([waitForImages(critical, (p) => { loaded = p; }), heroFramesReady]);
+  // Never wait more than 8s: the hero falls back to its poster image if frames are slow.
+  let readyDone = false;
+  const ready = Promise.race([
+    Promise.all([waitForImages(critical, (p) => { loaded = p; }), heroFramesReady]),
+    new Promise((resolve) => setTimeout(resolve, 8000)),
+  ]).then(() => { readyDone = true; });
 
   const render = () => {
     const v = Math.round(state.shown);
@@ -111,7 +114,7 @@ function runLoader() {
     ease: 'power1.inOut',
     onUpdate() {
       // hold at 90 until the critical images are in
-      if ((loaded < 1 || !heroFrameLoaded) && state.shown > 90) { state.shown = 90; tick.pause(); ready.then(() => tick.resume()); }
+      if (!readyDone && state.shown > 90) { state.shown = 90; tick.pause(); ready.then(() => tick.resume()); }
       render();
     },
     onComplete: diveThroughClouds,
@@ -123,6 +126,9 @@ function runLoader() {
       onComplete() {
         loader.remove();
         document.body.classList.remove('is-loading');
+        // Always land on the hero, whatever the scroll position was during loading.
+        window.scrollTo(0, 0);
+        lenis?.scrollTo(0, { immediate: true, force: true });
         lenis?.start();
         ScrollTrigger.refresh();
       },
@@ -249,14 +255,19 @@ heroFramesReady.then(sizeCanvas);
 window.addEventListener('resize', sizeCanvas);
 
 if (!reduceMotion) {
+  // Units are viewport heights of scrolling: 2.2 for the fly-over, then 1.0 during
+  // which the tour (pulled up by -100vh in CSS) slides over the sinking hero.
+  const FLY = 2.2;
+  const OVERLAP = 1;
   const fly = { p: 0 };
   gsap.timeline({
     defaults: { ease: 'none' },
     scrollTrigger: {
       trigger: '.hero',
       start: 'top top',
-      end: () => `+=${window.innerHeight * 2.2}`,
+      end: () => `+=${window.innerHeight * (FLY + OVERLAP)}`,
       pin: true,
+      pinSpacing: true,
       scrub: 0.5,
       anticipatePin: 1,
       invalidateOnRefresh: true,
@@ -264,15 +275,24 @@ if (!reduceMotion) {
   })
     .to(fly, {
       p: 1,
-      duration: 1,
+      duration: FLY,
       onUpdate: () => requestDraw(Math.round(fly.p * (FRAME_COUNT - 1))),
     }, 0)
-    .to('.hero__content', { y: -140, opacity: 0, duration: 0.25 }, 0)
-    .to('.hero > .scroll-cue', { opacity: 0, duration: 0.1 }, 0)
-    .fromTo('.hero__caption', { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.15 }, 0.3)
-    .to('.hero__caption', { opacity: 0, y: -40, duration: 0.15 }, 0.75)
-    .to('.hero__shade', { opacity: 0.35, duration: 0.3 }, 0.1)
-    .to('.hero__shade', { opacity: 1, duration: 0.15 }, 0.85);
+    .to('.hero__content', { y: -140, opacity: 0, duration: 0.55 }, 0)
+    .to('.hero > .scroll-cue', { opacity: 0, duration: 0.2 }, 0)
+    .fromTo('.hero__caption', { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.33 }, 0.66)
+    .to('.hero__caption', { opacity: 0, y: -40, duration: 0.33 }, 1.6)
+    .to('.hero__shade', { opacity: 0.35, duration: 0.6 }, 0.2)
+    // hand-off: the hero sinks back and dims while the tour slides up over it
+    .to('.hero__media', { scale: 0.9, duration: OVERLAP, ease: 'power1.in' }, FLY)
+    .to('.hero__dim', { opacity: 0.8, duration: OVERLAP }, FLY);
+
+  gsap.fromTo('.tour__stage',
+    { borderTopLeftRadius: 32, borderTopRightRadius: 32 },
+    {
+      borderTopLeftRadius: 0, borderTopRightRadius: 0, ease: 'none',
+      scrollTrigger: { trigger: '.tour', start: 'top bottom', end: 'top top', scrub: 0.5 },
+    });
 }
 
 /* ---------- pinned tour ---------- */
@@ -288,14 +308,20 @@ const moves = [
   [1.2, 1.02, 3, -3, 3, -3],
 ];
 
+// One timeline unit = one scene slot = SLOT viewport heights of scrolling.
+const SLOT = 1.8;
+const WIPE = 0.7;      // share of a slot spent wiping to the next image
+const END_HOLD = 0.6;  // linger on the last scene before releasing the pin
+const tourUnits = (n - 1) + WIPE / 2 + END_HOLD;
+
 const tour = gsap.timeline({
   defaults: { ease: 'none' },
   scrollTrigger: {
     trigger: '.tour',
     start: 'top top',
-    end: () => `+=${window.innerHeight * n * 1.1}`,
+    end: () => `+=${window.innerHeight * SLOT * tourUnits}`,
     pin: '.tour__stage',
-    scrub: 1,
+    scrub: 1.2,
     anticipatePin: 1,
     invalidateOnRefresh: true,
   },
@@ -304,18 +330,21 @@ const tour = gsap.timeline({
 scenes.forEach((scene, i) => {
   const img = $('img', scene);
   const [s0, s1, x0, x1, y0, y1] = moves[i % moves.length];
-  // each scene's camera drifts across its own window (plus overlap with neighbours)
-  tour.fromTo(img, { scale: s0, xPercent: x0, yPercent: y0 }, { scale: s1, xPercent: x1, yPercent: y1, duration: 1.4 }, Math.max(0, i - 0.3));
+  const from = Math.max(0, i - WIPE / 2);
+  const to = Math.min(tourUnits, i + 1 + WIPE / 2);
+  // each scene's camera drifts slowly across the whole time it is on screen
+  tour.fromTo(img, { scale: s0, xPercent: x0, yPercent: y0 }, { scale: s1, xPercent: x1, yPercent: y1, duration: to - from }, from);
 
   if (i > 0) {
-    const at = i - 0.25;
-    tour.to(scene, { clipPath: 'inset(0% 0 0 0)', duration: 0.5, ease: 'power2.inOut' }, at);
-    tour.to(captions[i - 1], { autoAlpha: 0, y: -40, duration: 0.25, ease: 'power2.in' }, at);
-    tour.fromTo(captions[i], { autoAlpha: 0, y: 40 }, { autoAlpha: 1, y: 0, duration: 0.3, ease: 'power2.out' }, at + 0.25);
+    const at = i - WIPE / 2;
+    tour.to(scene, { clipPath: 'inset(0% 0 0 0)', duration: WIPE, ease: 'power1.inOut' }, at);
+    tour.fromTo(scene, { yPercent: 8 }, { yPercent: 0, duration: WIPE, ease: 'power1.out' }, at);
+    tour.to(captions[i - 1], { autoAlpha: 0, y: -40, duration: WIPE * 0.45, ease: 'power1.in' }, at);
+    tour.fromTo(captions[i], { autoAlpha: 0, y: 40 }, { autoAlpha: 1, y: 0, duration: WIPE * 0.5, ease: 'power1.out' }, at + WIPE * 0.5);
   }
 });
-tour.fromTo('.tour__progress span', { scaleY: 1 / n }, { scaleY: 1, duration: n - 0.25 }, 0);
-tour.to({}, { duration: 0.3 }); // short hold on the last scene before releasing the pin
+tour.fromTo('.tour__progress span', { scaleY: 1 / n }, { scaleY: 1, duration: (n - 1) + WIPE / 2 }, 0);
+tour.to({}, { duration: 0.001 }, tourUnits); // keep the full length so the last scene holds
 
 /* ---------- header colour over light sections ---------- */
 $$('.light').forEach((section) => {
@@ -513,5 +542,9 @@ gsap.fromTo('.contact__media img', { scale: 1.25 }, {
   scrollTrigger: { trigger: '.contact', start: 'top bottom', end: 'top top', scrub: true },
 });
 
-window.addEventListener('load', () => { window.scrollTo(0, 0); ScrollTrigger.refresh(); });
+window.addEventListener('load', () => {
+  // Only reset while the loader is up; never yank someone back once they are scrolling.
+  if (document.body.classList.contains('is-loading')) window.scrollTo(0, 0);
+  ScrollTrigger.refresh();
+});
 runLoader();

@@ -220,6 +220,13 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
     linear-gradient(90deg, rgba(5,5,8,.62) 0%, rgba(5,5,8,.15) 55%, rgba(5,5,8,0) 100%),
     linear-gradient(0deg, rgba(5,5,8,.55) 0%, rgba(5,5,8,0) 40%);
 }
+.hero { background: var(--ink); }
+.hero__dim { position: absolute; inset: 0; background: #050508; opacity: 0; pointer-events: none; }
+/* The tour overlaps the hero's last screen so it can slide up over it (see main.js). */
+@media (prefers-reduced-motion: no-preference) {
+  .tour { margin-top: -100vh; z-index: 2; }
+  .tour__stage { box-shadow: 0 -30px 80px rgba(0, 0, 0, .45); }
+}
 .hero__caption {
   position: absolute; left: 50%; bottom: 18%; transform: translateX(-50%);
   margin: 0; text-align: center; opacity: 0; pointer-events: none;
