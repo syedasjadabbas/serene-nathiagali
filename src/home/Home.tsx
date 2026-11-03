@@ -205,18 +205,16 @@ export default function Home() {
             <p className="section-head__text">Archery, hiking, golf, snowboarding, shooting range, helipad access, massages, alpine roller coaster and rock climbing — all within the resort.</p>
             <Link className="link-more" to="/amenities">All amenities <span>→</span></Link>
           </div>
-          <figure className="hscroll__card"><img src="/assets/img/desire1.jpg" alt="Helipad" loading="lazy" /></figure>
-          <figure className="hscroll__card"><img src="/assets/img/desire10.jpg" alt="Skiing" loading="lazy" /></figure>
-          <figure className="hscroll__card"><img src="/assets/img/desire14.jpg" alt="Infinity pool" loading="lazy" /></figure>
-          <figure className="hscroll__card"><img src="/assets/img/desire8.jpg" alt="Rooftop restaurant" loading="lazy" /></figure>
-          <figure className="hscroll__card"><img src="/assets/img/desire11.jpg" alt="Sauna and massage" loading="lazy" /></figure>
-          <figure className="hscroll__card"><img src="/assets/img/desire15.jpg" alt="Heated flooring" loading="lazy" /></figure>
-          <figure className="hscroll__card"><img src="/assets/img/desire2.jpg" alt="Rock climbing" loading="lazy" /></figure>
-          <figure className="hscroll__card"><img src="/assets/img/desire7.jpg" alt="Zipline" loading="lazy" /></figure>
-          <figure className="hscroll__card"><img src="/assets/img/desire5.jpg" alt="Mini golf course" loading="lazy" /></figure>
-          <figure className="hscroll__card"><img src="/assets/img/desire6.jpg" alt="Fitness gym" loading="lazy" /></figure>
-          <figure className="hscroll__card"><img src="/assets/img/desire3.jpg" alt="Luxury hotel suite" loading="lazy" /></figure>
-          <figure className="hscroll__card"><img src="/assets/img/desire16.jpg" alt="24/7 CCTV surveillance" loading="lazy" /></figure>
+          <figure className="hscroll__card"><img src="/assets/img/amenities/ski-slope.jpg" alt="Ski slope" loading="lazy" /><figcaption><span>01 · Snow sports</span>Ski slope</figcaption></figure>
+          <figure className="hscroll__card"><img src="/assets/img/amenities/rooftop-crown.jpg" alt="Rooftop crown" loading="lazy" /><figcaption><span>02 · Hotel & dining</span>Rooftop crown</figcaption></figure>
+          <figure className="hscroll__card"><img src="/assets/img/amenities/infinity-pool.jpg" alt="Glass-roof pool" loading="lazy" /><figcaption><span>03 · Wellness</span>Glass-roof pool</figcaption></figure>
+          <figure className="hscroll__card"><img src="/assets/img/amenities/archery.jpg" alt="Archery range" loading="lazy" /><figcaption><span>04 · Outdoor sport</span>Archery range</figcaption></figure>
+          <figure className="hscroll__card"><img src="/assets/img/amenities/rooftop-dining.jpg" alt="Rooftop restaurant" loading="lazy" /><figcaption><span>05 · Hotel & dining</span>Rooftop restaurant</figcaption></figure>
+          <figure className="hscroll__card"><img src="/assets/img/amenities/mini-golf.jpg" alt="Mini golf" loading="lazy" /><figcaption><span>06 · Outdoor sport</span>Mini golf</figcaption></figure>
+          <figure className="hscroll__card"><img src="/assets/img/amenities/sky-lounge.jpg" alt="Sky lounge" loading="lazy" /><figcaption><span>07 · Hotel & dining</span>Sky lounge</figcaption></figure>
+          <figure className="hscroll__card"><img src="/assets/img/amenities/adventure-park.jpg" alt="Adventure park" loading="lazy" /><figcaption><span>08 · Family</span>Adventure park</figcaption></figure>
+          <figure className="hscroll__card"><img src="/assets/img/amenities/sunset-terrace.jpg" alt="Sunset terrace" loading="lazy" /><figcaption><span>09 · Hotel & dining</span>Sunset terrace</figcaption></figure>
+          <figure className="hscroll__card"><img src="/assets/img/amenities/snow-trails.jpg" alt="Winter trails" loading="lazy" /><figcaption><span>10 · Snow sports</span>Winter trails</figcaption></figure>
         </div>
       </section>
 

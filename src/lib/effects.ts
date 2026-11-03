@@ -156,7 +156,7 @@ export function initScrollEffects(root: HTMLElement) {
     })
   })
   revealGroup(root, '.figures li', { y: 40 }, 'top 90%')
-  revealGroup(root, '.tiles img', { y: 60, scale: 0.92 }, 'top 85%')
+  revealGroup(root, '.tiles .tile', { y: 60, scale: 0.92 }, 'top 85%')
   revealGroup(root, '.price li, .calc, .benefits', { y: 50 })
   revealGroup(root, '.timeline .milestone', { x: 80 })
   revealGroup(root, '.progress-list .milestone', { y: 60 })

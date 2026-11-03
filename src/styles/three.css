@@ -41,9 +41,12 @@
 .hscroll__intro h2 { margin: 0; font-size: clamp(36px, 4.6vw, 72px); font-weight: 300; line-height: 1; letter-spacing: -.035em; text-transform: uppercase; }
 .hscroll__intro .eyebrow { color: rgba(255,255,255,.6); }
 .hscroll__intro .section-head__text { color: rgba(255,255,255,.7); }
-.hscroll__card { flex: 0 0 clamp(260px, 30vw, 440px); margin: 0; border-radius: 8px; overflow: hidden; aspect-ratio: 460 / 371; align-self: center; }
+.hscroll__card { position: relative; flex: 0 0 clamp(260px, 30vw, 440px); margin: 0; border-radius: 8px; overflow: hidden; aspect-ratio: 460 / 371; align-self: center; }
 .hscroll__card img { width: 100%; height: 100%; object-fit: cover; transition: transform 1s var(--ease); }
 .hscroll__card:hover img { transform: scale(1.06); }
+.hscroll__card::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(8,10,14,.82), rgba(8,10,14,0) 48%); pointer-events: none; }
+.hscroll__card figcaption { position: absolute; left: 22px; right: 22px; bottom: 20px; z-index: 1; display: grid; gap: 8px; font-size: clamp(20px, 1.9vw, 30px); font-weight: 300; line-height: 1; letter-spacing: -.02em; text-transform: uppercase; color: var(--white); }
+.hscroll__card figcaption span { font-size: 10.5px; font-weight: 500; letter-spacing: .22em; color: rgba(255,255,255,.7); }
 @media (max-width: 900px) {
   .hscroll__row { flex-wrap: wrap; }
   .hscroll__intro { flex-basis: 100%; padding: 0 0 24px; }
