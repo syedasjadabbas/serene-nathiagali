@@ -90,9 +90,12 @@ export function homeSetup(root: HTMLElement) {
   const blobs: (Blob | undefined)[] = new Array(FRAME_COUNT)
   const bitmaps = new Map<number, ImageBitmap>()
   const decoding = new Set<number>()
-  const DECODE_AHEAD = frameSet === 'lg' ? 14 : 16
-  let wantedFrame = 0
-  let drawnFrame = -1
+  // decode further ahead in the direction of travel than behind it
+  const AHEAD = frameSet === 'lg' ? 24 : 28
+  const BEHIND = 8
+  let wanted = 0 // fractional frame position from the scroll, e.g. 41.37
+  let direction = 1
+  let drawnKey = ''
   let drawQueued = false
 
   const sizeCanvas = () => {
@@ -101,42 +104,70 @@ export function homeSetup(root: HTMLElement) {
     const k = Math.min(window.devicePixelRatio || 1, 2, frameWidth / coverCssWidth)
     canvas.width = Math.round(canvas.clientWidth * k)
     canvas.height = Math.round(canvas.clientHeight * k)
-    drawnFrame = -1
-    requestDraw(wantedFrame)
+    drawnKey = ''
+    requestDraw(wanted)
   }
+  const inWindow = (i: number, center: number) =>
+    direction >= 0 ? i - center <= AHEAD + 2 && center - i <= BEHIND + 2 : center - i <= AHEAD + 2 && i - center <= BEHIND + 2
   const decodeAround = (center: number) => {
-    for (let d = 0; d <= DECODE_AHEAD; d++) {
-      for (const i of [center + d, center - d]) {
+    // nearest first, alternating forward and back, reaching further forward
+    for (let d = 0; d <= AHEAD; d++) {
+      const order = direction >= 0 ? [center + d, center - d] : [center - d, center + d]
+      order.forEach((i, k) => {
+        if (k === 1 && d > BEHIND) return
         const blob = blobs[i]
-        if (i < 0 || i >= FRAME_COUNT || !blob || bitmaps.has(i) || decoding.has(i)) continue
+        if (i < 0 || i >= FRAME_COUNT || !blob || bitmaps.has(i) || decoding.has(i)) return
         decoding.add(i)
         createImageBitmap(blob).then((bm) => {
           decoding.delete(i)
-          if (!alive || Math.abs(i - wantedFrame) > DECODE_AHEAD * 2) { bm.close(); return }
+          if (!alive || !inWindow(i, Math.floor(wanted))) { bm.close(); return }
           bitmaps.set(i, bm)
-          if (drawnFrame === -1 || Math.abs(i - wantedFrame) < Math.abs(drawnFrame - wantedFrame)) requestDraw(wantedFrame)
+          if (Math.abs(i - wanted) < 2.5 || !drawnKey) requestDraw(wanted)
         }).catch(() => decoding.delete(i))
-      }
+      })
     }
-    bitmaps.forEach((bm, i) => { if (Math.abs(i - center) > DECODE_AHEAD * 2) { bm.close(); bitmaps.delete(i) } })
+    bitmaps.forEach((bm, i) => { if (!inWindow(i, center)) { bm.close(); bitmaps.delete(i) } })
   }
-  const paint = () => {
-    const i = wantedFrame
-    let key = -1
-    for (let d = 0; d < FRAME_COUNT && key < 0; d++) {
-      if (bitmaps.has(i - d)) key = i - d
-      else if (bitmaps.has(i + d)) key = i + d
+  const nearest = (i: number) => {
+    for (let d = 0; d < FRAME_COUNT; d++) {
+      if (bitmaps.has(i - d)) return i - d
+      if (bitmaps.has(i + d)) return i + d
     }
-    if (key < 0 || key === drawnFrame) return
-    drawnFrame = key
-    const bm = bitmaps.get(key)!
+    return -1
+  }
+  const drawCover = (bm: ImageBitmap) => {
     const cw = canvas.width, ch = canvas.height
     const scale = Math.max(cw / bm.width, ch / bm.height)
     const w = bm.width * scale, h = bm.height * scale
     ctx2d.drawImage(bm, (cw - w) / 2, (ch - h) / 2, w, h)
   }
-  const requestDraw = (i: number) => {
-    if (i !== wantedFrame) { wantedFrame = i; decodeAround(i) }
+  // Draws the frame under the scroll position and dissolves into the next one by the
+  // fractional remainder, so a 7 fps film moves smoothly instead of stepping.
+  const paint = () => {
+    const i0 = Math.floor(wanted), t = wanted - i0
+    const base = nearest(i0)
+    if (base < 0) return
+    const next = base === i0 && t > 0.02 && bitmaps.has(i0 + 1) ? i0 + 1 : -1
+    const key = next < 0 ? `${base}` : `${base}:${next}:${t.toFixed(2)}`
+    if (key === drawnKey) return
+    drawnKey = key
+    ctx2d.globalAlpha = 1
+    drawCover(bitmaps.get(base)!)
+    if (next >= 0) {
+      ctx2d.globalAlpha = t
+      drawCover(bitmaps.get(next)!)
+      ctx2d.globalAlpha = 1
+    }
+  }
+  // dev only: lets the test harness read what the hero is drawing
+  if (import.meta.env.DEV) (window as unknown as { __hero: unknown }).__hero = { get wanted() { return wanted }, get drawn() { return drawnKey }, get decoded() { return bitmaps.size }, get loaded() { return blobs.filter(Boolean).length } }
+  const requestDraw = (f: number) => {
+    const clamped = Math.max(0, Math.min(FRAME_COUNT - 1, f))
+    if (Math.floor(clamped) !== Math.floor(wanted)) {
+      direction = clamped >= wanted ? 1 : -1
+      wanted = clamped
+      decodeAround(Math.floor(clamped))
+    } else wanted = clamped
     if (drawQueued) return
     drawQueued = true
     requestAnimationFrame(() => { drawQueued = false; if (alive) paint() })
@@ -150,7 +181,7 @@ export function homeSetup(root: HTMLElement) {
   // 1. the coarse hero frames (enough to scrub), 2. the map and tower scenes, 3. the remaining frames.
   const fetchFrame = (i: number) => fetch(frameSrc(i))
     .then((r) => r.blob())
-    .then((b) => { blobs[i] = b; if (Math.abs(i - wantedFrame) <= DECODE_AHEAD) decodeAround(wantedFrame) })
+    .then((b) => { blobs[i] = b; if (Math.abs(i - wanted) <= AHEAD) decodeAround(Math.floor(wanted)) })
     .catch(() => {})
   const fetchAll = (list: number[], parallel: number) => new Promise<void>((resolve) => {
     let next = 0, done = 0
@@ -176,10 +207,10 @@ export function homeSetup(root: HTMLElement) {
       defaults: { ease: 'none' },
       scrollTrigger: {
         trigger: $('.hero', root), start: 'top top', end: () => `+=${window.innerHeight * (FLY + OVERLAP)}`,
-        pin: true, pinSpacing: true, scrub: 0.5, anticipatePin: 1, invalidateOnRefresh: true,
+        pin: true, pinSpacing: true, scrub: 0.8, anticipatePin: 1, invalidateOnRefresh: true,
       },
     })
-      .to(fly, { p: 1, duration: FLY, onUpdate: () => requestDraw(Math.round(fly.p * (FRAME_COUNT - 1))) }, 0)
+      .to(fly, { p: 1, duration: FLY, onUpdate: () => requestDraw(fly.p * (FRAME_COUNT - 1)) }, 0)
       .to($$('.hero__content', root), { y: -140, opacity: 0, duration: 0.55 }, 0)
       .to($$('.hero > .scroll-cue', root), { opacity: 0, duration: 0.2 }, 0)
     // one caption per shot, timed to the film (shot changes at ~40% and ~69%)

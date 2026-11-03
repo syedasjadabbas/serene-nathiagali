@@ -38,9 +38,9 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   display: inline-flex; align-items: center; gap: 10px;
   height: 36px; padding: 0 16px;
   border-radius: 999px;
-  background: var(--glass);
+  /* tinted, not blurred: a backdrop blur over the moving hero film halves the frame rate */
+  background: rgba(20, 20, 26, .38);
   border: 1px solid var(--glass-line);
-  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
   font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
   transition: background .3s;
 }
@@ -55,9 +55,8 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   display: inline-flex; align-items: center; gap: 14px;
   height: 46px; padding: 0 6px 0 22px;
   border-radius: 999px;
-  background: rgba(20, 20, 26, .55);
+  background: rgba(20, 20, 26, .66);
   border: 1px solid var(--glass-line);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
   transition: background .35s, color .35s;
 }
