@@ -52,8 +52,8 @@ export function homeSetup(root: HTMLElement) {
   }
 
   /* ---------- hero: canvas frame sequence ---------- */
-  // The hero film: three drone shots from the project's 3D animation (rooftop crown,
-  // forest approach, ski-slope glide), cut with dissolves from the 1080p masters, colour graded,
+  // The hero film: three drone shots from the project's 3D animation (forest approach,
+  // ski-slope glide, rooftop crown), cut with dissolves from the 1080p masters, colour graded,
   // and exported as frames, lightly denoised over time so the foliage doesn't shimmer.
   // 30 fps at 1080p on big screens and 720p on laptops; 15 fps at 480p on phones, to keep the download small.
   // pick by the pixels the cover-fit needs (portrait phones crop the middle of a wide frame)
@@ -61,13 +61,13 @@ export function homeSetup(root: HTMLElement) {
   const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData
   const frameSet = saveData || neededWidth < 900 ? 'sm' : neededWidth < 1500 ? 'lg' : 'hd'
   const FRAME_W = { sm: 854, lg: 1280, hd: 1920 }[frameSet]
-  const FRAME_COUNT = frameSet === 'sm' ? 180 : 359
+  const FRAME_COUNT = frameSet === 'sm' ? 193 : 386
   const framesDir = { sm: 'sm', lg: 'lg30', hd: 'hd30' }[frameSet]
   // AVIF where the browser decodes it (about half the size of WebP), WebP otherwise
-  let frameSrc = (i: number) => `/assets/hero4/${framesDir}/${String(i + 1).padStart(3, '0')}.avif`
+  let frameSrc = (i: number) => `/assets/hero5/${framesDir}/${String(i + 1).padStart(3, '0')}.avif`
   const avifReady = supportsAvif().then((ok) => {
     // the WebP fallback is the 15 fps set
-    if (!ok) frameSrc = (i: number) => `/assets/hero4/webp/${String(Math.floor(i * 180 / FRAME_COUNT) + 1).padStart(3, '0')}.webp`
+    if (!ok) frameSrc = (i: number) => `/assets/hero5/webp/${String(Math.floor(i * 193 / FRAME_COUNT) + 1).padStart(3, '0')}.webp`
   })
   const canvas = $<HTMLCanvasElement>('.hero__canvas', root)!
   const ctx2d = canvas.getContext('2d', { alpha: false })!
@@ -126,13 +126,14 @@ export function homeSetup(root: HTMLElement) {
     const cw = canvas.width, ch = canvas.height
     const scale = Math.max(cw / bm.width, ch / bm.height)
     const w = bm.width * scale, h = bm.height * scale
-    ctx2d.drawImage(bm, (cw - w) / 2, (ch - h) / 2, w, h)
+    // wide screens lose height: trim the bottom, as the tower stands at the top of the footage
+    ctx2d.drawImage(bm, (cw - w) / 2, 0, w, h)
   }
   // Draws the frame under the scroll position. The 15 fps set adds a short dissolve into the next
   // frame around the halfway point to soften its steps; at 30 fps the steps are small enough
   // that one clean frame is smoother, as it sends the GPU half the image data.
   const paint = () => {
-    const smooth30 = FRAME_COUNT > 180
+    const smooth30 = FRAME_COUNT > 193
     const i0 = smooth30 ? Math.round(wanted) : Math.floor(wanted), f = wanted - i0
     const t = smooth30 ? 0 : Math.min(1, Math.max(0, (f - 0.3) / 0.4))
     const base = nearest(i0)
@@ -165,7 +166,7 @@ export function homeSetup(root: HTMLElement) {
 
   // a sparse set of about 23 frames comes first so the whole film can be scrubbed early; the rest fill in after
   const loadOrder: number[] = []
-  for (let i = 0; i < FRAME_COUNT; i += FRAME_COUNT > 180 ? 16 : 8) loadOrder.push(i)
+  for (let i = 0; i < FRAME_COUNT; i += FRAME_COUNT > 193 ? 16 : 8) loadOrder.push(i)
   const COARSE = loadOrder.length
   const fetchFrame = (i: number) => fetch(frameSrc(i))
     .then((r) => r.blob())
@@ -206,7 +207,7 @@ export function homeSetup(root: HTMLElement) {
 
   /* ---------- hero pin: fly-over, then the tour slides up over it ---------- */
   /* ---------- chapter counter for the film's three shots ---------- */
-  const CHAPTERS = [[0, 'The crown'], [0.3, 'The forest'], [0.72, 'The slope']] as const
+  const CHAPTERS = [[0, 'The forest'], [0.41, 'The slope'], [0.69, 'The crown']] as const
   const hudCount = $('.hero__hud-count b', root), hudName = $('.hero__hud-name', root)
   let chapter = 0
   const updateHud = (p: number) => {
@@ -220,11 +221,11 @@ export function homeSetup(root: HTMLElement) {
   }
 
   if (!reducedMotion) {
-    // 6 screens of scrolling for the 12 s film: slow enough to feel like moving through the place
-    const FLY = 6, OVERLAP = 1
+    // 6.5 screens of scrolling for the 13 s film: slow enough to feel like moving through the place
+    const FLY = 6.5, OVERLAP = 1
     const fly = { p: 0 }
-    // the opening crown shot is short, so it takes a longer stretch of the scroll: 30% for its 16% of the film
-    const filmAt = (p: number) => (p < 0.3 ? (p / 0.3) * 0.16 : 0.16 + ((p - 0.3) / 0.7) * 0.84)
+    // the closing crown shot is short, so it takes a longer stretch of the scroll: 30% for its 13% of the film
+    const filmAt = (p: number) => (p < 0.7 ? (p / 0.7) * 0.87 : 0.87 + ((p - 0.7) / 0.3) * 0.13)
     const heroTl = gsap.timeline({
       defaults: { ease: 'none' },
       scrollTrigger: {
@@ -242,8 +243,8 @@ export function homeSetup(root: HTMLElement) {
       .fromTo($$('.hero__hud-line > i', root), { scaleY: 0 }, { scaleY: 1, duration: FLY }, 0)
       .to($$('.hero__hud', root), { opacity: 0, duration: FLY * 0.04 }, FLY * 0.96)
       .to($$('.hero > .scroll-cue', root), { opacity: 0, duration: 0.2 }, 0)
-    // one caption per shot, timed to the film (shot changes at 30% and 72% of the scroll)
-    ;[[0.1, 0.22], [0.36, 0.6], [0.76, 0.95]].forEach(([a, b], i) => {
+    // one caption per shot, timed to the film (shot changes at 41% and 69% of the scroll)
+    ;[[0.1, 0.33], [0.46, 0.62], [0.74, 0.95]].forEach(([a, b], i) => {
       const cap = $$('.hero__caption', root)[i]
       if (!cap) return
       heroTl.fromTo(cap, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: FLY * 0.07 }, FLY * a)
