@@ -53,18 +53,19 @@ export function homeSetup(root: HTMLElement) {
 
   /* ---------- hero: canvas frame sequence ---------- */
   // The hero film: three drone shots from the project's 3D animation (forest approach,
-  // ski-slope glide, rooftop crown), cut with dissolves and exported as frames: every second
-  // frame of the 30 fps edit, lightly denoised over time so the foliage doesn't shimmer.
+  // ski-slope glide, rooftop crown), cut with dissolves from the 1080p masters, colour graded,
+  // and exported as frames: every second frame of the 30 fps edit, lightly denoised over time
+  // so the foliage doesn't shimmer.
   const FRAME_COUNT = 230
-  const FRAME_W = 1600
+  const FRAME_W = 1920
   // pick by the pixels the cover-fit needs (portrait phones crop the middle of a wide frame)
   const neededWidth = Math.max(window.innerWidth, window.innerHeight * 16 / 9) * Math.min(window.devicePixelRatio || 1, 2)
   const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData
   const frameSet = saveData || neededWidth < 1100 ? 'sm' : 'lg'
   // AVIF where the browser decodes it (about half the size of WebP), WebP otherwise
-  let frameSrc = (i: number) => `/assets/hero/${frameSet}/${String(i + 1).padStart(3, '0')}.avif`
+  let frameSrc = (i: number) => `/assets/hero2/${frameSet}/${String(i + 1).padStart(3, '0')}.avif`
   const avifReady = supportsAvif().then((ok) => {
-    if (!ok) frameSrc = (i: number) => `/assets/hero/webp/${String(i + 1).padStart(3, '0')}.webp`
+    if (!ok) frameSrc = (i: number) => `/assets/hero2/webp/${String(i + 1).padStart(3, '0')}.webp`
   })
   const canvas = $<HTMLCanvasElement>('.hero__canvas', root)!
   const ctx2d = canvas.getContext('2d', { alpha: false })!
@@ -75,8 +76,9 @@ export function homeSetup(root: HTMLElement) {
   const bitmaps = new Map<number, ImageBitmap>()
   const decoding = new Set<number>()
   // decode further ahead in the direction of travel than behind it
-  const AHEAD = frameSet === 'lg' ? 32 : 40
-  const BEHIND = 10
+  // a decoded full-HD frame is 8 MB, so the window stays around 250 MB
+  const AHEAD = frameSet === 'lg' ? 24 : 40
+  const BEHIND = frameSet === 'lg' ? 7 : 10
   let wanted = 0 // fractional frame position from the scroll, e.g. 41.37
   let direction = 1
   let drawnKey = ''
@@ -206,7 +208,8 @@ export function homeSetup(root: HTMLElement) {
       defaults: { ease: 'none' },
       scrollTrigger: {
         trigger: $('.hero', root), start: 'top top', end: () => `+=${window.innerHeight * (FLY + OVERLAP)}`,
-        pin: true, pinSpacing: true, scrub: 1.2, anticipatePin: 1, invalidateOnRefresh: true,
+        // short catch-up: the page already scrolls smoothly, so a long scrub made the film trail the hand
+        pin: true, pinSpacing: true, scrub: 0.5, anticipatePin: 1, invalidateOnRefresh: true,
       },
     })
       .to(fly, { p: 1, duration: FLY, onUpdate: () => { requestDraw(fly.p * (FRAME_COUNT - 1)); updateHud(fly.p) } }, 0)
