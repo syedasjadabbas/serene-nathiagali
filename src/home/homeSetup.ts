@@ -55,17 +55,18 @@ export function homeSetup(root: HTMLElement) {
   // The hero film: three drone shots from the project's 3D animation (forest approach,
   // ski-slope glide, rooftop crown), cut with dissolves from the 1080p masters, colour graded,
   // and exported as frames: every second frame of the 30 fps edit, lightly denoised over time
-  // so the foliage doesn't shimmer.
+  // so the foliage doesn't shimmer. Frames are 720p (480p on phones): full HD unpacked too
+  // slowly to keep up with a scroll on ordinary laptops.
   const FRAME_COUNT = 230
-  const FRAME_W = 1920
   // pick by the pixels the cover-fit needs (portrait phones crop the middle of a wide frame)
   const neededWidth = Math.max(window.innerWidth, window.innerHeight * 16 / 9) * Math.min(window.devicePixelRatio || 1, 2)
   const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData
-  const frameSet = saveData || neededWidth < 1100 ? 'sm' : 'lg'
+  const frameSet = saveData || neededWidth < 900 ? 'sm' : 'lg'
+  const FRAME_W = frameSet === 'lg' ? 1280 : 854
   // AVIF where the browser decodes it (about half the size of WebP), WebP otherwise
-  let frameSrc = (i: number) => `/assets/hero2/${frameSet}/${String(i + 1).padStart(3, '0')}.avif`
+  let frameSrc = (i: number) => `/assets/hero3/${frameSet}/${String(i + 1).padStart(3, '0')}.avif`
   const avifReady = supportsAvif().then((ok) => {
-    if (!ok) frameSrc = (i: number) => `/assets/hero2/webp/${String(i + 1).padStart(3, '0')}.webp`
+    if (!ok) frameSrc = (i: number) => `/assets/hero3/webp/${String(i + 1).padStart(3, '0')}.webp`
   })
   const canvas = $<HTMLCanvasElement>('.hero__canvas', root)!
   const ctx2d = canvas.getContext('2d', { alpha: false })!
@@ -76,9 +77,9 @@ export function homeSetup(root: HTMLElement) {
   const bitmaps = new Map<number, ImageBitmap>()
   const decoding = new Set<number>()
   // decode further ahead in the direction of travel than behind it
-  // a decoded full-HD frame is 8 MB, so the window stays around 250 MB
-  const AHEAD = frameSet === 'lg' ? 24 : 40
-  const BEHIND = frameSet === 'lg' ? 7 : 10
+  // a decoded 720p frame is 3.7 MB, so the window stays under 200 MB
+  const AHEAD = 40
+  const BEHIND = 12
   let wanted = 0 // fractional frame position from the scroll, e.g. 41.37
   let direction = 1
   let drawnKey = ''
@@ -86,8 +87,7 @@ export function homeSetup(root: HTMLElement) {
 
   const sizeCanvas = () => {
     const coverCssWidth = Math.max(canvas.clientWidth, canvas.clientHeight * 16 / 9)
-    const frameWidth = frameSet === 'lg' ? FRAME_W : 1024
-    const k = Math.min(window.devicePixelRatio || 1, 2, frameWidth / coverCssWidth)
+    const k = Math.min(window.devicePixelRatio || 1, 2, FRAME_W / coverCssWidth)
     canvas.width = Math.round(canvas.clientWidth * k)
     canvas.height = Math.round(canvas.clientHeight * k)
     drawnKey = ''
@@ -159,12 +159,10 @@ export function homeSetup(root: HTMLElement) {
     requestAnimationFrame(() => { drawQueued = false; if (alive) paint() })
   }
 
-  // download coarse-to-fine (every 8th frame, then 4th, 2nd, all) so scrubbing works early
+  // every 8th frame comes first so the whole film can be scrubbed early; the rest fill in after
   const loadOrder: number[] = []
-  ;[8, 4, 2, 1].forEach((step) => { for (let i = 0; i < FRAME_COUNT; i += step) if (!loadOrder.includes(i)) loadOrder.push(i) })
-  const COARSE = Math.ceil(FRAME_COUNT / 8)
-  // Downloads run in three steps so the 3D scenes further down are ready early:
-  // 1. the coarse hero frames (enough to scrub), 2. the map and tower scenes, 3. the remaining frames.
+  for (let i = 0; i < FRAME_COUNT; i += 8) loadOrder.push(i)
+  const COARSE = loadOrder.length
   const fetchFrame = (i: number) => fetch(frameSrc(i))
     .then((r) => r.blob())
     .then((b) => { blobs[i] = b; if (Math.abs(i - wanted) <= AHEAD) decodeAround(Math.floor(wanted)) })
@@ -178,11 +176,28 @@ export function homeSetup(root: HTMLElement) {
     }
     for (let k = 0; k < parallel; k++) loadNext()
   })
+  // the rest load from the scroll position forward, so the stretch being watched fills in first
+  const fetchRest = (parallel: number) => {
+    const started = new Set(loadOrder.slice(0, COARSE))
+    const pick = () => {
+      const from = Math.floor(wanted)
+      for (let d = 0; d < FRAME_COUNT; d++) {
+        for (const i of [from + d, from - d]) if (i >= 0 && i < FRAME_COUNT && !started.has(i)) return i
+      }
+      return -1
+    }
+    const loadNext = () => {
+      const i = alive ? pick() : -1
+      if (i < 0) return
+      started.add(i)
+      fetchFrame(i).finally(loadNext)
+    }
+    for (let k = 0; k < parallel; k++) loadNext()
+  }
   const heroFramesReady = avifReady.then(() => fetchAll(loadOrder.slice(0, COARSE), 6))
   heroFramesReady.then(() => { if (alive) sizeCanvas() })
-  heroFramesReady
-    .then(() => (alive ? preload3D() : undefined))
-    .then(() => { if (alive) void fetchAll(loadOrder.slice(COARSE), 6) })
+  // the film first: waiting for the 3D scenes left the hero stepping through coarse frames
+  heroFramesReady.then(() => { if (alive) { fetchRest(4); void preload3D() } })
   window.addEventListener('resize', sizeCanvas)
 
   /* ---------- hero pin: fly-over, then the tour slides up over it ---------- */

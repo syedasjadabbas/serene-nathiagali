@@ -1,0 +1,5 @@
+# source material that the site never serves
+_src/
+.claude/
+dist/
+node_modules/
