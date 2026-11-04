@@ -16,9 +16,13 @@ function Warmup({ onReady }: { onReady: () => void }) {
 
 // One draw once the shaders are ready, so a scene built ahead of time is already on the GPU
 // (textures uploaded) before it scrolls into view.
-function FirstFrame() {
+function FirstFrame({ onDrawn }: { onDrawn: () => void }) {
   const invalidate = useThree((s) => s.invalidate)
-  useEffect(() => { invalidate() }, [invalidate])
+  useEffect(() => {
+    invalidate()
+    const id = requestAnimationFrame(() => requestAnimationFrame(onDrawn))
+    return () => cancelAnimationFrame(id)
+  }, [invalidate, onDrawn])
   return null
 }
 
@@ -31,12 +35,16 @@ export default function CanvasHost<P extends object>({ scene: Scene, sceneProps,
   canvas: Omit<CanvasProps, 'children'>
 }) {
   const [ready, setReady] = useState(false)
+  const [drawn, setDrawn] = useState(false)
   const onReady = useCallback(() => setReady(true), [])
+  const onDrawn = useCallback(() => setDrawn(true), [])
+  // after the first draw, a 'never' canvas stays fully stopped (it could not take that one draw)
+  const loop = !ready ? 'never' : !drawn && frameloop === 'never' ? 'demand' : frameloop
   return (
-    <Canvas {...canvas} frameloop={ready ? frameloop : 'never'}>
+    <Canvas {...canvas} frameloop={loop}>
       <Suspense fallback={null}>
         <Scene {...sceneProps} />
-        {ready ? <FirstFrame /> : <Warmup onReady={onReady} />}
+        {!ready ? <Warmup onReady={onReady} /> : !drawn && <FirstFrame onDrawn={onDrawn} />}
       </Suspense>
     </Canvas>
   )

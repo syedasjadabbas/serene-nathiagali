@@ -15,7 +15,8 @@ class SceneBoundary extends Component<{ fallback: ReactNode; children: ReactNode
 /**
  * 3D canvas that builds its scene ahead of time (`premount`: as soon as the 3D code has been
  * preloaded in the background) or as it nears the screen, whichever comes first. It animates only
- * while visible and otherwise renders on demand. Devices without WebGL get `fallback`.
+ * while visible and is fully stopped otherwise: on demand would not be enough, as auto-rotating
+ * controls ask for a new frame every frame. Devices without WebGL get `fallback`.
  */
 export function LazyCanvas<P extends object>({ scene, sceneProps, canvas = {}, fallback = null, warmup = '200px', premount = false }: {
   scene: ComponentType<P>
@@ -54,7 +55,7 @@ export function LazyCanvas<P extends object>({ scene, sceneProps, canvas = {}, f
       {!supported ? fallback : mounted && (
         <SceneBoundary fallback={fallback}>
           <Suspense fallback={null}>
-            <CanvasHost scene={scene as ComponentType<object>} sceneProps={sceneProps} canvas={canvas} frameloop={visible ? 'always' : 'demand'} />
+            <CanvasHost scene={scene as ComponentType<object>} sceneProps={sceneProps} canvas={canvas} frameloop={visible ? 'always' : 'never'} />
           </Suspense>
         </SceneBoundary>
       )}
