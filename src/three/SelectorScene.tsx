@@ -1,38 +1,34 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { OrbitControls, Edges } from '@react-three/drei'
+import { OrbitControls, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
+import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
-import { TOWERS as HERO_TOWERS, FLOOR_H } from './towers'
-import { facadeTextures, fitTexture } from './facade'
+import { TOWERS as SPECS } from './towers'
+import { Landscape } from './Landscape'
 
 export type FloorRef = { tower: number; floor: number }
 
 /** Residential floors per tower (the ground floor is the lobby). */
-export const residentialFloors = (t: number) => HERO_TOWERS[t].floors - 1
+export const residentialFloors = (t: number) => SPECS[t].floors - 1
 
-// The selector stands the three towers in one straight row, B · A · C, facing the camera,
-// so every floor can be read and picked (the hero keeps its own staggered layout).
-const ROW_X = [0, -4.4, 4.4]
-const TOWERS = HERO_TOWERS.map((t, i) => ({ ...t, x: ROW_X[i], z: 0, rot: 0 }))
-const HOME = new THREE.Vector3(0, 2.2, 0)
+// The architect's SketchUp model, simplified to a 2 MB GLB: one primitive per material
+// (stone, iron, glass, stair, roof), in metres, ground at y = 0.
+const MODEL_URL = '/assets/model/serene-heights.glb'
+const S = 0.28 // metres to scene units
+// floor slab levels measured from the model, in metres; the last entries are the roof line
+const LEVELS = [-0.3, 4.3, 8.1, 12, 15.8, 19.6, 24.3, 28.1, 31.9, 35.7, 39.5, 43]
+const floorMid = (f: number) => (LEVELS[f] + LEVELS[f + 1]) / 2 * S
+// The building is one ring round a courtyard, so each tower is a stretch of it along x (metres)
+const ZONES = [[-8, 8], [-30, -8], [8, 30]] as const
+const ROOF = 41
+const TOWERS = ZONES.map(([a, b]) => ({ a, b, x: (a + b) / 2 * S, z: 0, w: (b - a) * S, h: ROOF * S }))
+const HOME = new THREE.Vector3(0, 5.2, 0)
 // camera distance and height angle for the overview, a chosen tower and a chosen floor
 // (`width` is how much of the scene must fit across a narrow phone screen)
-const VIEW = { all: { dist: 23.5, phi: 1.3, width: 14 }, tower: { dist: 14, phi: 1.25, width: 5.6 }, floor: { dist: 6.6, phi: 1.36, width: 4.6 } }
-const SWAY = 0.35 // the overview drifts this far either side of front-on, so the row never turns edge-on
-
-const SLAB = FLOOR_H * 0.84
-// the facade texture shows at full colour; selection tints it, sold-out floors grey it,
-// floors of the other towers fade to pine
-const COLORS = {
-  slab: new THREE.Color('#ffffff'),
-  slabDim: new THREE.Color('#3a4440'),
-  selected: new THREE.Color('#bfe0cf'),
-  glow: new THREE.Color('#7fb79c'),
-  hover: new THREE.Color('#cfe3d8'),
-  full: new THREE.Color('#9da59f'),
-  stucco: new THREE.Color('#f1f3ee'),
-}
+const VIEW = { all: { dist: 34, phi: 1.3, width: 20 }, tower: { dist: 24, phi: 1.25, width: 9 }, floor: { dist: 15, phi: 1.36, width: 7 } }
+const SWAY = 0.35 // the overview drifts this far either side of front-on
 
 import { coarsePointer } from '../lib/device'
 
@@ -44,190 +40,128 @@ type Props = {
   onHover: (f: FloorRef | null) => void
   onPick: (f: FloorRef) => void
   onTower: (t: number) => void
-  labelEls: React.RefObject<(HTMLButtonElement | null)[]>
 }
 
-function Floor({ t, f, props }: { t: number; f: number; props: Props }) {
-  const spec = TOWERS[t]
-  const isLobby = f === 0
-  const isTop = f === residentialFloors(t)
-  const full = false // no availability shown: the model is for picking a floor plan
-  const h = isLobby ? FLOOR_H * 0.96 : SLAB
-  const balcony = !isLobby && !isTop
-
-  // box faces: +x, -x, +y, -y, +z, -z; the long faces (w) and short faces (d) get their own tiling
-  const mats = useMemo(() => {
-    const tx = facadeTextures()
-    const base = isLobby ? tx.lobby : isTop ? tx.top : tx.floors[(f * 7 + t * 3) % tx.floors.length]
-    const side = (width: number) => new THREE.MeshStandardMaterial({ map: fitTexture(base, width), roughness: 0.82, emissive: COLORS.glow, emissiveIntensity: 0, transparent: true })
-    const short = side(spec.d), long = side(spec.w)
-    const cap = new THREE.MeshStandardMaterial({ color: COLORS.stucco, roughness: 0.9, transparent: true })
-    const railMat = new THREE.MeshStandardMaterial({ map: fitTexture(tx.rail, spec.w + 0.1, 0.2), transparent: true, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 0.5, metalness: 0.4 })
-    const slabMat = new THREE.MeshStandardMaterial({ color: '#0c1210', roughness: 0.7, transparent: true })
-    return { box: [short, short, cap, cap, long, long], tinted: [short, long], all: [short, long, cap, railMat, slabMat], railMat, slabMat }
-  }, [isLobby, isTop, f, t, spec.d, spec.w])
-  useEffect(() => () => mats.all.forEach((m) => { m.map?.dispose(); m.dispose() }), [mats])
-
-  useFrame(() => {
-    const dimTower = props.tower !== null && props.tower !== t
-    const sel = props.tower === t && props.floor === f
-    const hov = props.hover?.tower === t && props.hover.floor === f
-    const base = sel ? COLORS.selected : hov ? COLORS.hover : dimTower ? COLORS.slabDim : full ? COLORS.full : COLORS.slab
-    const glow = sel ? 0.75 : hov ? 0.2 : 0
-    const opacity = dimTower ? 0.35 : 1
-    for (const m of mats.tinted) {
-      m.color.lerp(base, 0.2)
-      m.emissiveIntensity += (glow - m.emissiveIntensity) * 0.2
-    }
-    for (const m of mats.all) m.opacity += (opacity - m.opacity) * 0.15
-  })
-  const pick = (e: ThreeEvent<PointerEvent | MouseEvent>) => { e.stopPropagation(); if (!isLobby) props.onPick({ tower: t, floor: f }) }
-  const y0 = f * FLOOR_H
-  return (
-    <group
-      onPointerOver={(e) => { e.stopPropagation(); if (!isLobby) { props.onHover({ tower: t, floor: f }); document.body.style.cursor = 'pointer' } }}
-      onPointerOut={() => { props.onHover(null); document.body.style.cursor = '' }}
-      onClick={pick}
-    >
-      <mesh position={[0, y0 + (isLobby ? h / 2 : FLOOR_H / 2), 0]} material={mats.box}>
-        <boxGeometry args={[spec.w, h, spec.d]} />
-      </mesh>
-      {balcony && (
-        <>
-          {/* balcony slabs front and back, with black railings like the renders */}
-          <mesh position={[0, y0 + 0.012, 0]} material={mats.slabMat}>
-            <boxGeometry args={[spec.w + 0.1, 0.024, spec.d + 0.28]} />
-          </mesh>
-          {[1, -1].map((side) => (
-            <mesh key={side} position={[0, y0 + 0.024 + 0.055, side * (spec.d / 2 + 0.14)]} material={mats.railMat}>
-              <planeGeometry args={[spec.w + 0.1, 0.11]} />
-            </mesh>
-          ))}
-        </>
-      )}
-    </group>
-  )
+// shared by every material: a glowing band for the chosen floor, the other towers dimmed,
+// and rooms lit behind some of the glass
+const uniforms = {
+  uBand: { value: new THREE.Vector4(0, 0, 0, 0) }, // y from, y to, x from, x to (metres)
+  uBandOn: { value: 0 },
+  uZone: { value: new THREE.Vector2(-99, 99) },
+  uDim: { value: 0 },
+}
+function tuned(m: THREE.MeshStandardMaterial, lit: boolean) {
+  m.flatShading = true
+  m.side = THREE.DoubleSide
+  m.customProgramCacheKey = () => (lit ? 'lit' : 'plain') // the two variants share one function source
+  m.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, uniforms)
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vMp;')
+      .replace('#include <begin_vertex>', `#include <begin_vertex>\nvMp = (modelMatrix * vec4(transformed, 1.0)).xyz / ${S.toFixed(3)};`)
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+        varying vec3 vMp;
+        uniform vec4 uBand; uniform float uBandOn; uniform vec2 uZone; uniform float uDim;`)
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        ${lit ? `
+        vec2 pane = floor(vec2(vMp.x + vMp.z, vMp.y) / vec2(2.6, 3.8));
+        float room = fract(sin(dot(pane, vec2(12.9898, 78.233))) * 43758.5453);
+        if (room > 0.62) totalEmissiveRadiance += vec3(1.0, 0.62, 0.3) * (0.28 + room * 0.3);` : ''}
+        bool inZone = vMp.x > uZone.x && vMp.x < uZone.y;
+        if (!inZone) { diffuseColor.rgb *= 1.0 - uDim * 0.72; totalEmissiveRadiance *= 1.0 - uDim * 0.8; }
+        if (vMp.y > uBand.x && vMp.y < uBand.y && vMp.x > uBand.z && vMp.x < uBand.w)
+          totalEmissiveRadiance += vec3(0.45, 0.85, 0.65) * uBandOn;`)
+  }
+  return m
 }
 
-// a gabled steel-and-glass pavilion, like the rooftop restaurant and greenhouse in the renders
-function Pavilion({ w, d, x, onClick }: { w: number; d: number; x: number; onClick: (e: ThreeEvent<MouseEvent>) => void }) {
-  const ph = FLOOR_H * 1.05
-  const gable = useMemo(() => {
-    const gh = d * 0.22
-    const shape = new THREE.Shape([new THREE.Vector2(-d / 2 - 0.06, 0), new THREE.Vector2(d / 2 + 0.06, 0), new THREE.Vector2(0, gh)])
-    const g = new THREE.ExtrudeGeometry(shape, { depth: w + 0.1, bevelEnabled: false })
-    g.translate(0, 0, -(w + 0.1) / 2)
-    g.rotateY(Math.PI / 2)
-    return g
-  }, [w, d])
-  const glass = useMemo(() => {
-    const tx = facadeTextures().glass
-    const side = (width: number) => {
-      const map = fitTexture(tx, width, 0.6)
-      return new THREE.MeshStandardMaterial({ map, emissiveMap: map, emissive: '#ffffff', emissiveIntensity: 0.35, roughness: 0.15, metalness: 0.3, transparent: true, opacity: 0.94 })
-    }
-    const short = side(d), long = side(w)
-    const cap = new THREE.MeshStandardMaterial({ color: '#0c1210', roughness: 0.6 })
-    return [short, short, cap, cap, long, long]
-  }, [w, d])
-  useEffect(() => () => {
-    gable.dispose()
-    glass.forEach((m) => { m.map?.dispose(); m.dispose() })
-  }, [gable, glass])
-  return (
-    <group position={[x, 0, 0]} onClick={onClick}>
-      <mesh position={[0, ph / 2, 0]} material={glass}>
-        <boxGeometry args={[w, ph, d]} />
-      </mesh>
-      {/* pine-green steel gable roof */}
-      <mesh geometry={gable} position={[0, ph, 0]}>
-        <meshStandardMaterial color="#37584f" roughness={0.55} metalness={0.3} />
-        <Edges color="#0c1210" />
-      </mesh>
-    </group>
-  )
-}
-
-function Tower({ t, props }: { t: number; props: Props }) {
-  const spec = TOWERS[t]
-  const H = (residentialFloors(t) + 1) * FLOOR_H
-  const pick = (e: ThreeEvent<MouseEvent>) => { e.stopPropagation(); props.onTower(t) }
-  // the roof fades with the rest of the tower when another tower is chosen
-  const roof = useRef<THREE.Group>(null)
-  useFrame(() => {
-    const k = props.tower !== null && props.tower !== t ? 0.3 : 1
-    roof.current?.traverse((o) => {
-      const m = (o as THREE.Mesh).material as THREE.Material | undefined
-      if (!m || Array.isArray(m)) return
-      m.userData.base ??= m.opacity
-      m.transparent = true
-      m.opacity += (m.userData.base * k - m.opacity) * 0.15
+function Building({ props }: { props: Props }) {
+  const { scene } = useGLTF(MODEL_URL, false, true)
+  useMemo(() => {
+    scene.traverse((o) => {
+      const mesh = o as THREE.Mesh
+      if (!mesh.isMesh) return
+      const m = mesh.material as THREE.MeshStandardMaterial
+      if (m.name === 'stone') m.color.set('#e6dccb')
+      if (m.name === 'iron') m.color.set('#161513')
+      if (m.name === 'stair') m.color.set('#8e2620')
+      if (m.name === 'glass') { m.color.set('#27323c'); m.roughness = 0.08; m.metalness = 0.7 }
+      tuned(m, m.name === 'glass')
+      mesh.castShadow = m.name !== 'glass'
+      mesh.receiveShadow = true
     })
-  })
-  return (
-    <group position={[spec.x, 0, spec.z]} rotation={[0, spec.rot, 0]}>
-      {Array.from({ length: residentialFloors(t) + 1 }, (_, f) => <Floor key={f} t={t} f={f} props={props} />)}
-      {/* roof slab with a parapet line, then the rooftop restaurant and greenhouse */}
-      <group ref={roof}>
-      <mesh position={[0, H + 0.02, 0]}>
-        <boxGeometry args={[spec.w + 0.06, 0.04, spec.d + 0.06]} />
-        <meshStandardMaterial color="#0c1210" roughness={0.7} />
-      </mesh>
-      <group position={[0, H + 0.04, 0]}>
-        <Pavilion w={spec.w * 0.5} d={spec.d * 0.72} x={-spec.w * 0.2} onClick={pick} />
-        <Pavilion w={spec.w * 0.3} d={spec.d * 0.55} x={spec.w * 0.3} onClick={pick} />
-      </group>
-      </group>
-    </group>
-  )
-}
-
-function Grounds() {
-  const forest = useMemo(() => {
-    const g = new THREE.ConeGeometry(0.22, 1, 6)
-    const m = new THREE.MeshStandardMaterial({ color: '#0f261e', roughness: 0.9 })
-    const inst = new THREE.InstancedMesh(g, m, 260)
-    const o = new THREE.Object3D()
-    let s = 5
-    const r = () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646
-    let i = 0
-    while (i < 260) {
-      const a = r() * Math.PI * 2, d = 7 + r() * 13
-      const x = Math.cos(a) * d, z = Math.sin(a) * d
-      if (z > 4 && Math.abs(x) < 9) continue // keep the valley side open
-      const h = 1.2 + r() * 2
-      o.position.set(x, h / 2, z)
-      o.scale.set(h * 0.6, h, h * 0.6)
-      o.updateMatrix()
-      inst.setMatrixAt(i++, o.matrix)
+  }, [scene])
+  useFrame(() => {
+    const active = props.hover ?? (props.tower !== null && props.floor !== null ? { tower: props.tower, floor: props.floor } : null)
+    if (active) {
+      const [a, b] = ZONES[active.tower]
+      uniforms.uBand.value.set(LEVELS[active.floor], LEVELS[active.floor + 1], a, b)
     }
-    return inst
-  }, [])
+    uniforms.uBandOn.value += ((active ? (props.hover ? 0.14 : 0.24) : 0) - uniforms.uBandOn.value) * 0.2
+    uniforms.uDim.value += ((props.tower !== null ? 1 : 0) - uniforms.uDim.value) * 0.15
+    if (props.tower !== null) uniforms.uZone.value.set(ZONES[props.tower][0], ZONES[props.tower][1])
+  })
+  // picking runs against one plain box per tower, not the 680,000 triangles of the model;
+  // the height of the hit gives the floor
+  const floorAt = (t: number, y: number) => {
+    const m = y / S
+    let f = 0
+    while (f < LEVELS.length - 2 && m >= LEVELS[f + 1]) f++
+    return Math.min(f, residentialFloors(t))
+  }
+  const over = (t: number) => (e: ThreeEvent<PointerEvent>) => {
+    e.stopPropagation()
+    const f = floorAt(t, e.point.y)
+    if (f === 0) { props.onHover(null); document.body.style.cursor = ''; return }
+    if (props.hover?.tower !== t || props.hover.floor !== f) props.onHover({ tower: t, floor: f })
+    document.body.style.cursor = 'pointer'
+  }
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <circleGeometry args={[24, 64]} />
-        <meshStandardMaterial color="#1a3229" roughness={1} />
-      </mesh>
-      <primitive object={forest} />
+      <group scale={S}><primitive object={scene} /></group>
+      {TOWERS.map((z, t) => (
+        <mesh key={t} visible={false} position={[z.x, z.h / 2, 0]}
+          onPointerMove={over(t)}
+          onPointerOut={() => { props.onHover(null); document.body.style.cursor = '' }}
+          onClick={(e) => { e.stopPropagation(); const f = floorAt(t, e.point.y); if (f > 0) props.onPick({ tower: t, floor: f }); else props.onTower(t) }}>
+          <boxGeometry args={[z.w, z.h, 23.4 * S]} />
+        </mesh>
+      ))}
     </group>
   )
 }
+useGLTF.preload(MODEL_URL, false, true)
 
-function Rig({ tower, floor, labelEls, spin }: Pick<Props, 'tower' | 'floor' | 'labelEls' | 'spin'>) {
+// image-based light for the glass and iron, built from three's studio room (no download),
+// and sun shadows that are drawn once: nothing in the scene moves
+function Atmosphere() {
+  const { gl, scene } = useThree()
+  useEffect(() => {
+    const pmrem = new THREE.PMREMGenerator(gl)
+    const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
+    scene.environment = env
+    scene.environmentIntensity = 0.35
+    gl.shadowMap.autoUpdate = false
+    gl.shadowMap.needsUpdate = true
+    return () => { scene.environment = null; env.dispose(); pmrem.dispose() }
+  }, [gl, scene])
+  return null
+}
+
+function Rig({ tower, floor, spin }: Pick<Props, 'tower' | 'floor' | 'spin'>) {
   const controls = useRef<OrbitControlsImpl>(null)
   const { camera, size } = useThree()
   const orbit = useMemo(() => ({ az: 0.19, target: HOME.clone(), r: undefined as number | undefined, pol: undefined as number | undefined }), [])
   const want = useMemo(() => HOME.clone(), [])
   const v = useMemo(() => new THREE.Vector3(), [])
   const sph = useMemo(() => new THREE.Spherical(), [])
-  const anchors = useMemo(() => TOWERS.map((t) => new THREE.Vector3(t.x, t.floors * FLOOR_H + 1.5, t.z)), [])
   // a camera flight runs after each selection, and stops as soon as the visitor drags
   const fly = useMemo(() => ({ active: false, dist: VIEW.all.dist, phi: VIEW.all.phi, front: false }), [])
 
   useEffect(() => {
     if (tower === null) want.copy(HOME)
-    else want.set(TOWERS[tower].x, floor ? floor * FLOOR_H + FLOOR_H / 2 : (TOWERS[tower].floors * FLOOR_H) / 2, TOWERS[tower].z)
+    else want.set(TOWERS[tower].x, floor ? floorMid(floor) : TOWERS[tower].h / 2, TOWERS[tower].z)
     const view = tower === null ? VIEW.all : floor ? VIEW.floor : VIEW.tower
     Object.assign(fly, { active: true, dist: view.dist, phi: view.phi, front: floor !== null && tower !== null })
   }, [tower, floor, want, fly])
@@ -283,44 +217,35 @@ function Rig({ tower, floor, labelEls, spin }: Pick<Props, 'tower' | 'floor' | '
       )
       camera.lookAt(orbit.target)
     }
-    // project tower labels, then push apart any that collide on screen
-    const pts = anchors.map((a) => {
-      v.copy(a).project(camera)
-      return { x: ((v.x + 1) / 2) * size.width, y: ((1 - v.y) / 2) * size.height, hidden: v.z > 1 }
-    })
-    const gap = Math.min(150, size.width * 0.26) // labels are narrower than that on a phone
-    for (let i = 0; i < pts.length; i++)
-      for (let j = 0; j < i; j++)
-        if (Math.abs(pts[i].x - pts[j].x) < gap && Math.abs(pts[i].y - pts[j].y) < 44) pts[i].y = pts[j].y - 46
-    pts.forEach((p, i) => {
-      const el = labelEls.current?.[i]
-      if (!el) return
-      el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0) translate(-50%, -100%)`
-      el.style.visibility = p.hidden ? 'hidden' : 'visible'
-      el.style.opacity = p.hidden ? '0' : '1'
-    })
   })
   if (coarsePointer) return null
   return (
     <OrbitControls ref={controls} makeDefault enablePan={false} enableDamping dampingFactor={0.08}
-      minDistance={5} maxDistance={26} minPolarAngle={0.35} maxPolarAngle={1.45} autoRotateSpeed={0.4} />
+      minDistance={8} maxDistance={44} minPolarAngle={0.35} maxPolarAngle={1.45} autoRotateSpeed={0.4} />
   )
 }
 
 export function SelectorScene(props: Props) {
   return (
     <>
-      <color attach="background" args={['#0c1210']} />
-      <fog attach="fog" args={['#0c1210', 22, 48]} />
-      <hemisphereLight args={['#eef6f1', '#0f221b', 0.9]} />
-      <directionalLight position={[-8, 12, 6]} intensity={2.2} color="#f2f6f4" />
-      <directionalLight position={[9, 5, -6]} intensity={0.6} color="#9fc6cf" />
-      <pointLight position={[3, 2, 7]} intensity={12} distance={16} color="#ffe6c2" />
-      <Rig tower={props.tower} floor={props.floor} labelEls={props.labelEls} spin={props.spin} />
+      <fog attach="fog" args={['#8f96a8', 80, 460]} />
+      <Atmosphere />
+      {/* dusk, as in the renders: a slate sky, snow bounce from below, low warm sun with shadows */}
+      <hemisphereLight args={['#93a7c4', '#6f747e', 0.55]} />
+      <directionalLight position={[-26, 15, 18]} intensity={1.5} color="#ffe2c4" castShadow
+        shadow-mapSize={[2048, 2048]} shadow-bias={-0.005} shadow-normalBias={0.12}
+        shadow-camera-left={-32} shadow-camera-right={32} shadow-camera-top={32} shadow-camera-bottom={-32} shadow-camera-near={1} shadow-camera-far={90} />
+      <directionalLight position={[14, 8, -12]} intensity={0.45} color="#9fb6cf" />
+      <Rig tower={props.tower} floor={props.floor} spin={props.spin} />
       <group onPointerMissed={() => props.onHover(null)}>
-        {TOWERS.map((_, t) => <Tower key={t} t={t} props={props} />)}
+        <Building props={props} />
       </group>
-      <Grounds />
+      <Landscape />
+      {/* a soft glow round the lit rooms */}
+      <EffectComposer multisampling={2}>
+        <Bloom mipmapBlur intensity={0.4} luminanceThreshold={0.93} luminanceSmoothing={0.15} radius={0.5} />
+        <Vignette eskil={false} offset={0.35} darkness={0.5} />
+      </EffectComposer>
     </>
   )
 }

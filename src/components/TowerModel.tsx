@@ -14,6 +14,8 @@ const TOWER_LETTERS = ['A', 'B', 'C']
 const residentialFloors = (t: number) => TOWERS[t].floors - 1
 // Published floor plans (from the official site). Floors not listed have no plan published yet.
 const PLAN_FOR_FLOOR: Record<number, string> = { 1: '1st', 2: '2nd', 3: '3rd', 5: '5th', 6: '6th', 7: '7th', 8: '8th' }
+const TOWER_C = 2 // its plans aren't published yet
+const planFor = (t: number | null, f: number) => (t === TOWER_C ? undefined : PLAN_FOR_FLOOR[f])
 const ordinal = (n: number) => n + (['th', 'st', 'nd', 'rd'][(n % 100 > 10 && n % 100 < 14) ? 0 : n % 10] ?? 'th')
 
 /** Interactive 3D model of the three towers: pick a tower, then a floor, to open its plan. */
@@ -21,14 +23,13 @@ export function TowerModel() {
   const [tower, setTower] = useState<number | null>(null)
   const [floor, setFloor] = useState<number | null>(null)
   const [hover, setHover] = useState<FloorRef | null>(null)
-  const labelEls = useRef<(HTMLButtonElement | null)[]>([])
   const spin = useRef(0.19)
   const webgl = useMemo(() => hasWebGL(), [])
 
   const pickTower = (t: number | null) => { setTower(t); setFloor(null) }
   const pickFloor = ({ tower: t, floor: f }: FloorRef) => { setTower(t); setFloor(f) }
-  const plan = floor ? PLAN_FOR_FLOOR[floor] : undefined
-  const planHint = (f: number) => (PLAN_FOR_FLOOR[f] ? 'Plan available' : 'Plan coming soon')
+  const plan = floor ? planFor(tower, floor) : undefined
+  const planHint = (t: number | null, f: number) => (planFor(t, f) ? 'Plan available' : 'Plan coming soon')
 
   return (
     <section className="towers rise" id="towers">
@@ -41,18 +42,11 @@ export function TowerModel() {
       <div className="sel-stage">
         <div className="sel-canvas">
           <LazyCanvas scene={SelectorScene}
-            sceneProps={{ spin, tower, floor, hover, onHover: setHover, onPick: pickFloor, onTower: pickTower, labelEls }}
-            warmup="1500px" premount canvas={{ dpr: [1, 1.75], camera: { fov: 36, position: [4, 8.5, 21] }, gl: { antialias: true } }}
+            sceneProps={{ spin, tower, floor, hover, onHover: setHover, onPick: pickFloor, onTower: pickTower }}
+            warmup="1500px" premount canvas={{ dpr: [1, 1.25], camera: { fov: 36, far: 1200, position: [6, 12, 34] }, gl: { antialias: false }, shadows: true }}
             fallback={<div className="sel-fallback"><img src="/assets/img/renders/tower-forest-mist-sm.jpg" alt="Serene Heights towers" /><p>The 3D model isn’t available on this device. Choose a tower and floor from the list.</p></div>} />
-          <div className="sel-labels" hidden={!webgl}>
-            {TOWER_NAMES.map((n, t) => (
-              <button key={n} type="button" ref={(el) => { labelEls.current[t] = el }} className={`tower-tag${tower === t ? ' on' : ''}`} onClick={() => pickTower(t)}>
-                {n}<small>{residentialFloors(t)} floors</small>
-              </button>
-            ))}
-          </div>
           <div className="sel-hint">
-            {hover ? `${TOWER_NAMES[hover.tower]} · Floor ${hover.floor} · ${planHint(hover.floor)}` : coarsePointer ? 'Tap a floor' : 'Drag to turn · Click a floor'}
+            {hover ? `${TOWER_NAMES[hover.tower]} · Floor ${hover.floor} · ${planHint(hover.tower, hover.floor)}` : coarsePointer ? 'Tap a floor' : 'Drag to turn · Click a floor'}
           </div>
           {coarsePointer && webgl && (
             <div className="turn">
@@ -87,7 +81,7 @@ export function TowerModel() {
                     <button type="button" onClick={() => pickFloor({ tower, floor: f })}
                       onMouseEnter={() => setHover({ tower, floor: f })} onMouseLeave={() => setHover(null)}>
                       <span>{ordinal(f)} floor{f === residentialFloors(tower) ? ' · Top' : ''}</span>
-                      <span className={`floors__tag${PLAN_FOR_FLOOR[f] ? ' has-plan' : ''}`}>{planHint(f)}</span>
+                      <span className={`floors__tag${planFor(tower, f) ? ' has-plan' : ''}`}>{planHint(tower, f)}</span>
                     </button>
                   </li>
                 ))}
