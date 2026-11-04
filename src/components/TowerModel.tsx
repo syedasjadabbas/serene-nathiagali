@@ -43,7 +43,7 @@ export function TowerModel() {
         <div className="sel-canvas">
           <LazyCanvas scene={SelectorScene}
             sceneProps={{ spin, tower, floor, hover, onHover: setHover, onPick: pickFloor, onTower: pickTower }}
-            warmup="1500px" premount canvas={{ dpr: [1, 1.25], camera: { fov: 36, far: 1200, position: [6, 12, 34] }, gl: { antialias: false }, shadows: true }}
+            warmup="1500px" premount canvas={{ dpr: [1, 1.25], camera: { fov: 36, far: 1200, position: [6, 12, 34] }, gl: { antialias: true }, shadows: true, flat: true }}
             fallback={<div className="sel-fallback"><img src="/assets/img/renders/tower-forest-mist-sm.jpg" alt="Serene Heights towers" /><p>The 3D model isn’t available on this device. Choose a tower and floor from the list.</p></div>} />
           <div className="sel-hint">
             {hover ? `${TOWER_NAMES[hover.tower]} · Floor ${hover.floor} · ${planHint(hover.tower, hover.floor)}` : coarsePointer ? 'Tap a floor' : 'Drag to turn · Click a floor'}

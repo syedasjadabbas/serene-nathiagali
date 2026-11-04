@@ -2,8 +2,6 @@ import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { OrbitControls, useGLTF } from '@react-three/drei'
 import * as THREE from 'three'
-import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
-import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { TOWERS as SPECS } from './towers'
 import { Landscape } from './Landscape'
@@ -84,9 +82,12 @@ function Building({ props }: { props: Props }) {
       if (!mesh.isMesh) return
       const m = mesh.material as THREE.MeshStandardMaterial
       if (m.name === 'stone') m.color.set('#e6dccb')
-      if (m.name === 'iron') m.color.set('#161513')
+      if (m.name === 'iron') { m.color.set('#1b1a18'); m.metalness = 0.2 }
       if (m.name === 'stair') m.color.set('#8e2620')
-      if (m.name === 'glass') { m.color.set('#27323c'); m.roughness = 0.08; m.metalness = 0.7 }
+      if (m.name === 'glass') { m.color.set('#2c3945'); m.roughness = 0.2; m.metalness = 0 }
+      if (m.name === 'roof') m.metalness = 0.1
+      // stands in for the light a reflection map would add, without its long first-load cost
+      if (m.name === 'stone' || m.name === 'stair') { m.emissive.copy(m.color); m.emissiveIntensity = 0.3 }
       tuned(m, m.name === 'glass')
       mesh.castShadow = m.name !== 'glass'
       mesh.receiveShadow = true
@@ -133,19 +134,13 @@ function Building({ props }: { props: Props }) {
 }
 useGLTF.preload(MODEL_URL, false, true)
 
-// image-based light for the glass and iron, built from three's studio room (no download),
-// and sun shadows that are drawn once: nothing in the scene moves
-function Atmosphere() {
-  const { gl, scene } = useThree()
+// sun shadows are drawn once: nothing in the scene moves
+function StaticShadows() {
+  const gl = useThree((st) => st.gl)
   useEffect(() => {
-    const pmrem = new THREE.PMREMGenerator(gl)
-    const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
-    scene.environment = env
-    scene.environmentIntensity = 0.35
     gl.shadowMap.autoUpdate = false
     gl.shadowMap.needsUpdate = true
-    return () => { scene.environment = null; env.dispose(); pmrem.dispose() }
-  }, [gl, scene])
+  }, [gl])
   return null
 }
 
@@ -229,9 +224,9 @@ export function SelectorScene(props: Props) {
   return (
     <>
       <fog attach="fog" args={['#8f96a8', 80, 460]} />
-      <Atmosphere />
+      <StaticShadows />
       {/* dusk, as in the renders: a slate sky, snow bounce from below, low warm sun with shadows */}
-      <hemisphereLight args={['#93a7c4', '#6f747e', 0.55]} />
+      <hemisphereLight args={['#a3b5cf', '#7d828c', 0.85]} />
       <directionalLight position={[-26, 15, 18]} intensity={1.5} color="#ffe2c4" castShadow
         shadow-mapSize={[2048, 2048]} shadow-bias={-0.005} shadow-normalBias={0.12}
         shadow-camera-left={-32} shadow-camera-right={32} shadow-camera-top={32} shadow-camera-bottom={-32} shadow-camera-near={1} shadow-camera-far={90} />
@@ -241,11 +236,6 @@ export function SelectorScene(props: Props) {
         <Building props={props} />
       </group>
       <Landscape />
-      {/* a soft glow round the lit rooms */}
-      <EffectComposer multisampling={2}>
-        <Bloom mipmapBlur intensity={0.4} luminanceThreshold={0.93} luminanceSmoothing={0.15} radius={0.5} />
-        <Vignette eskil={false} offset={0.35} darkness={0.5} />
-      </EffectComposer>
     </>
   )
 }

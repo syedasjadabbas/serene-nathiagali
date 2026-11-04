@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useFrame, useThree } from '@react-three/fiber'
+import { use, useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { elevation, loadDem, project, SERENE } from './geo'
@@ -12,6 +12,9 @@ const PER_M = 0.032 // scene units per metre of height
 const PLATEAU = 16 // the building's level ground
 const REACH = 430 // where the land ends, inside the sky
 const [SX, SZ] = project(SERENE.lat, SERENE.lon)
+
+// hands the main thread back, so scrolling carries on while the land is built
+const breathe = () => new Promise<void>((r) => setTimeout(r))
 
 const rng = (seed: number) => {
   let s = seed
@@ -34,22 +37,32 @@ function noise(x: number, y: number) {
 }
 const fbm = (x: number, y: number) => noise(x, y) * 0.55 + noise(x * 2.1, y * 2.1) * 0.3 + noise(x * 4.3, y * 4.3) * 0.15
 
+function soft(x: number, z: number) {
+  let sum = 0
+  for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) sum += elevation(x + i * 0.1, z + j * 0.1)
+  return sum / 25
+}
+
 /** Ground height at scene x,z: level round the building, the real terrain further out. */
 function makeHeight() {
-  const base = elevation(SX, SZ)
+  const base = soft(SX, SZ)
   return (x: number, z: number) => {
     const r = Math.hypot(x, z)
-    const real = (elevation(SX + x / KM, SZ + z / KM) - base) * 1000 * PER_M
+    const kx = SX + x / KM, kz = SZ + z / KM
+    // near the building the 200 m elevation cells would show as a grid in the lighting
+    const e = r > 170 ? elevation(kx, kz) : soft(kx, kz)
+    const real = (e - base) * 1000 * PER_M
     const near = (fbm(x * 0.05 + 7, z * 0.05) - 0.5) * 3 - smooth(PLATEAU, 60, r) * 3
     return near * (1 - smooth(30, 110, r)) + real * smooth(PLATEAU, 110, r)
   }
 }
 
-function terrainGeometry(height: (x: number, z: number) => number) {
+async function terrainGeometry(height: (x: number, z: number) => number) {
   // rings packed tight near the building and wide at the horizon
   const RINGS = 170, SPOKES = 360
   const pos = new Float32Array((RINGS + 1) * SPOKES * 3)
   for (let i = 0; i <= RINGS; i++) {
+    if (i % 10 === 0) await breathe()
     const r = 2 + (REACH - 2) * Math.pow(i / RINGS, 2.2)
     for (let j = 0; j < SPOKES; j++) {
       const a = (j / SPOKES) * Math.PI * 2
@@ -73,6 +86,7 @@ function terrainGeometry(height: (x: number, z: number) => number) {
   const col = new Float32Array(pos.length)
   const snow = new THREE.Color('#e4e9ef'), forest = new THREE.Color('#1d3029'), frosted = new THREE.Color('#71827f'), c = new THREE.Color()
   for (let v = 0; v < pos.length / 3; v++) {
+    if (v % 3000 === 0) await breathe()
     const x = pos[v * 3], y = pos[v * 3 + 1], z = pos[v * 3 + 2]
     const r = Math.hypot(x, z)
     const patch = fbm(x * 0.09, z * 0.09)
@@ -133,7 +147,7 @@ function forest(height: (x: number, z: number) => number, map: THREE.Texture) {
   const COUNT = 2600
   const a0 = new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0)
   const geo = mergeGeometries([a0, a0.clone().rotateY(Math.PI / 2)])!
-  const m = new THREE.MeshStandardMaterial({ map, alphaTest: 0.5, roughness: 1, envMapIntensity: 0.2, side: THREE.DoubleSide })
+  const m = new THREE.MeshStandardMaterial({ map, alphaTest: 0.5, roughness: 1, side: THREE.DoubleSide })
   const inst = new THREE.InstancedMesh(geo, m, COUNT)
   inst.castShadow = true
   const o = new THREE.Object3D()
@@ -170,7 +184,10 @@ function canopyTexture() {
   for (let i = 0; i < 5200; i++) {
     const x = r() * S, y = r() * S, rad = 2 + r() * 7
     g.fillStyle = ['#1f3429', '#2a4235', '#54675f', '#b9c4c9', '#e6ebf0'][Math.floor(r() * r() * 5 + r() * 1.2) % 5]
-    for (const dx of [0, -S, S]) for (const dy of [0, -S, S]) { g.beginPath(); g.arc(x + dx, y + dy, rad, 0, Math.PI * 2); g.fill() }
+    for (const dx of [0, -S, S]) for (const dy of [0, -S, S]) {
+      if (x + dx + rad < 0 || x + dx - rad > S || y + dy + rad < 0 || y + dy - rad > S) continue
+      g.beginPath(); g.arc(x + dx, y + dy, rad, 0, Math.PI * 2); g.fill()
+    }
   }
   const t = new THREE.CanvasTexture(c)
   t.colorSpace = THREE.SRGBColorSpace
@@ -199,8 +216,9 @@ function canopied(m: THREE.MeshStandardMaterial, map: THREE.Texture) {
 function skyTexture() {
   const W = 2048, H = 1024
   const c = document.createElement('canvas')
-  c.width = W; c.height = H
+  c.width = W / 2; c.height = H / 2
   const g = c.getContext('2d')!
+  g.scale(0.5, 0.5)
   const grad = g.createLinearGradient(0, 0, 0, H)
   grad.addColorStop(0, '#182338')
   grad.addColorStop(0.3, '#26364f')
@@ -214,6 +232,7 @@ function skyTexture() {
   const r = rng(23)
   const puff = (x: number, y: number, rx: number, ry: number, rgb: string, a: number) => {
     for (const dx of [0, -W, W]) {
+      if (x + dx + rx < 0 || x + dx - rx > W) continue
       g.save()
       g.translate(x + dx, y)
       g.scale(rx, ry)
@@ -235,7 +254,6 @@ function skyTexture() {
   }
   const t = new THREE.CanvasTexture(c)
   t.colorSpace = THREE.SRGBColorSpace
-  t.mapping = THREE.EquirectangularReflectionMapping
   t.wrapS = THREE.RepeatWrapping
   return t
 }
@@ -244,12 +262,14 @@ function skyTexture() {
 function cloudTexture() {
   const S = 1024
   const c = document.createElement('canvas')
-  c.width = S; c.height = S
+  c.width = S / 2; c.height = S / 2
   const g = c.getContext('2d')!
+  g.scale(0.5, 0.5)
   const r = rng(41)
   for (let i = 0; i < 900; i++) {
     const x = r() * S, y = r() * S, rad = 30 + r() * 120
     for (const dx of [0, -S, S]) for (const dy of [0, -S, S]) {
+      if (x + dx + rad < 0 || x + dx - rad > S || y + dy + rad < 0 || y + dy - rad > S) continue
       const p = g.createRadialGradient(x + dx, y + dy, 0, x + dx, y + dy, rad)
       p.addColorStop(0, `rgba(238,232,230,${0.05 + r() * 0.1})`)
       p.addColorStop(1, 'rgba(238,232,230,0)')
@@ -264,48 +284,40 @@ function cloudTexture() {
   return t
 }
 
+// Built once, in steps, before the scene first draws: the shaders then compile in the background
+// with the rest of the scene, and coming back to the page costs nothing.
+let land: ReturnType<typeof build> | null = null
+async function build() {
+  await loadDem()
+  await breathe()
+  const height = makeHeight()
+  const ground = await terrainGeometry(height)
+  await breathe()
+  const sky = skyTexture()
+  await breathe()
+  const cloudMap = cloudTexture()
+  await breathe()
+  const soil = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 })
+  canopied(soil, canopyTexture())
+  await breathe()
+  const pine = pineTexture()
+  await breathe()
+  return { ground, soil, sky, cloudMap, trees: forest(height, pine) }
+}
+
 export function Landscape() {
-  const { gl, scene } = useThree()
-  const [land, setLand] = useState<{ ground: THREE.BufferGeometry; trees: THREE.InstancedMesh; soil: THREE.MeshStandardMaterial } | null>(null)
+  const { ground, soil, sky, cloudMap, trees } = use((land ??= build()))
   const clouds = useRef<THREE.MeshBasicMaterial>(null)
-  const cloudMap = useMemo(cloudTexture, [])
-  useEffect(() => {
-    const sky = skyTexture()
-    scene.background = sky
-    return () => { scene.background = null; sky.dispose() }
-  }, [scene])
-  useEffect(() => {
-    let live = true
-    let built: typeof land = null
-    loadDem().then(() => {
-      if (!live) return
-      const height = makeHeight()
-      const soil = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, envMapIntensity: 0.25 })
-      canopied(soil, canopyTexture())
-      built = { ground: terrainGeometry(height), trees: forest(height, pineTexture()), soil }
-      setLand(built)
-      gl.shadowMap.needsUpdate = true
-    })
-    return () => {
-      live = false
-      if (!built) return
-      built.ground.dispose()
-      built.soil.dispose()
-      built.trees.geometry.dispose()
-      ;(built.trees.material as THREE.MeshStandardMaterial).map?.dispose()
-      ;(built.trees.material as THREE.Material).dispose()
-    }
-  }, [gl])
-  useEffect(() => () => cloudMap.dispose(), [cloudMap])
   useFrame((_, dt) => { if (clouds.current?.map) clouds.current.map.offset.x += dt * 0.0016 })
   return (
     <group>
-      {land && (
-        <>
-          <mesh geometry={land.ground} material={land.soil} receiveShadow />
-          <primitive object={land.trees} />
-        </>
-      )}
+      {/* a plain dome: as scene.background the sky would be converted to a cube map at first draw */}
+      <mesh scale={[-1, 1, 1]} renderOrder={-1}>
+        <sphereGeometry args={[900, 32, 24]} />
+        <meshBasicMaterial map={sky} fog={false} side={THREE.BackSide} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <mesh geometry={ground} material={soil} receiveShadow />
+      <primitive object={trees} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -30, 0]}>
         <circleGeometry args={[REACH, 48]} />
         <meshBasicMaterial ref={clouds} map={cloudMap} transparent opacity={0.95} depthWrite={false} />
