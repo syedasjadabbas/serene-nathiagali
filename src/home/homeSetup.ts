@@ -52,21 +52,21 @@ export function homeSetup(root: HTMLElement) {
   }
 
   /* ---------- hero: canvas frame sequence ---------- */
-  // The hero film: three drone shots from the project's 3D animation (forest approach,
-  // ski-slope glide, rooftop crown), cut with dissolves from the 1080p masters, colour graded,
+  // The hero film: three drone shots from the project's 3D animation (rooftop crown,
+  // forest approach, ski-slope glide), cut with dissolves from the 1080p masters, colour graded,
   // and exported as frames: every second frame of the 30 fps edit, lightly denoised over time
   // so the foliage doesn't shimmer. Frames are 720p (480p on phones): full HD unpacked too
   // slowly to keep up with a scroll on ordinary laptops.
-  const FRAME_COUNT = 230
+  const FRAME_COUNT = 180
   // pick by the pixels the cover-fit needs (portrait phones crop the middle of a wide frame)
   const neededWidth = Math.max(window.innerWidth, window.innerHeight * 16 / 9) * Math.min(window.devicePixelRatio || 1, 2)
   const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData
   const frameSet = saveData || neededWidth < 900 ? 'sm' : 'lg'
   const FRAME_W = frameSet === 'lg' ? 1280 : 854
   // AVIF where the browser decodes it (about half the size of WebP), WebP otherwise
-  let frameSrc = (i: number) => `/assets/hero3/${frameSet}/${String(i + 1).padStart(3, '0')}.avif`
+  let frameSrc = (i: number) => `/assets/hero4/${frameSet}/${String(i + 1).padStart(3, '0')}.avif`
   const avifReady = supportsAvif().then((ok) => {
-    if (!ok) frameSrc = (i: number) => `/assets/hero3/webp/${String(i + 1).padStart(3, '0')}.webp`
+    if (!ok) frameSrc = (i: number) => `/assets/hero4/webp/${String(i + 1).padStart(3, '0')}.webp`
   })
   const canvas = $<HTMLCanvasElement>('.hero__canvas', root)!
   const ctx2d = canvas.getContext('2d', { alpha: false })!
@@ -202,7 +202,7 @@ export function homeSetup(root: HTMLElement) {
 
   /* ---------- hero pin: fly-over, then the tour slides up over it ---------- */
   /* ---------- chapter counter for the film's three shots ---------- */
-  const CHAPTERS = [[0, 'The forest'], [0.4, 'The slope'], [0.69, 'The crown']] as const
+  const CHAPTERS = [[0, 'The crown'], [0.3, 'The forest'], [0.72, 'The slope']] as const
   const hudCount = $('.hero__hud-count b', root), hudName = $('.hero__hud-name', root)
   let chapter = 0
   const updateHud = (p: number) => {
@@ -216,9 +216,11 @@ export function homeSetup(root: HTMLElement) {
   }
 
   if (!reducedMotion) {
-    // 7.5 screens of scrolling for the 15 s film: slow enough to feel like moving through the place
-    const FLY = 7.5, OVERLAP = 1
+    // 6 screens of scrolling for the 12 s film: slow enough to feel like moving through the place
+    const FLY = 6, OVERLAP = 1
     const fly = { p: 0 }
+    // the opening crown shot is short, so it takes a longer stretch of the scroll: 30% for its 16% of the film
+    const filmAt = (p: number) => (p < 0.3 ? (p / 0.3) * 0.16 : 0.16 + ((p - 0.3) / 0.7) * 0.84)
     const heroTl = gsap.timeline({
       defaults: { ease: 'none' },
       scrollTrigger: {
@@ -227,7 +229,7 @@ export function homeSetup(root: HTMLElement) {
         pin: true, pinSpacing: true, scrub: 0.5, anticipatePin: 1, invalidateOnRefresh: true,
       },
     })
-      .to(fly, { p: 1, duration: FLY, onUpdate: () => { requestDraw(fly.p * (FRAME_COUNT - 1)); updateHud(fly.p) } }, 0)
+      .to(fly, { p: 1, duration: FLY, onUpdate: () => { requestDraw(filmAt(fly.p) * (FRAME_COUNT - 1)); updateHud(fly.p) } }, 0)
       .to($$('.hero__content', root), { y: -140, opacity: 0, duration: FLY * 0.08 }, 0)
       // a slow push-in across the whole film, like a dolly move
       .fromTo(canvas, { scale: 1 }, { scale: 1.1, duration: FLY, immediateRender: false }, 0)
@@ -236,8 +238,8 @@ export function homeSetup(root: HTMLElement) {
       .fromTo($$('.hero__hud-line > i', root), { scaleY: 0 }, { scaleY: 1, duration: FLY }, 0)
       .to($$('.hero__hud', root), { opacity: 0, duration: FLY * 0.04 }, FLY * 0.96)
       .to($$('.hero > .scroll-cue', root), { opacity: 0, duration: 0.2 }, 0)
-    // one caption per shot, timed to the film (shot changes at ~40% and ~69%)
-    ;[[0.1, 0.33], [0.44, 0.62], [0.74, 0.95]].forEach(([a, b], i) => {
+    // one caption per shot, timed to the film (shot changes at 30% and 72% of the scroll)
+    ;[[0.1, 0.22], [0.36, 0.6], [0.76, 0.95]].forEach(([a, b], i) => {
       const cap = $$('.hero__caption', root)[i]
       if (!cap) return
       heroTl.fromTo(cap, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: FLY * 0.07 }, FLY * a)
