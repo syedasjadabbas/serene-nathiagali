@@ -54,19 +54,20 @@ export function homeSetup(root: HTMLElement) {
   /* ---------- hero: canvas frame sequence ---------- */
   // The hero film: three drone shots from the project's 3D animation (rooftop crown,
   // forest approach, ski-slope glide), cut with dissolves from the 1080p masters, colour graded,
-  // and exported as frames: every second frame of the 30 fps edit, lightly denoised over time
-  // so the foliage doesn't shimmer. Frames are 720p (480p on phones): full HD unpacked too
-  // slowly to keep up with a scroll on ordinary laptops.
-  const FRAME_COUNT = 180
+  // and exported as frames, lightly denoised over time so the foliage doesn't shimmer.
+  // 30 fps at 1080p on big screens and 720p on laptops; 15 fps at 480p on phones, to keep the download small.
   // pick by the pixels the cover-fit needs (portrait phones crop the middle of a wide frame)
   const neededWidth = Math.max(window.innerWidth, window.innerHeight * 16 / 9) * Math.min(window.devicePixelRatio || 1, 2)
   const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData
-  const frameSet = saveData || neededWidth < 900 ? 'sm' : 'lg'
-  const FRAME_W = frameSet === 'lg' ? 1280 : 854
+  const frameSet = saveData || neededWidth < 900 ? 'sm' : neededWidth < 1500 ? 'lg' : 'hd'
+  const FRAME_W = { sm: 854, lg: 1280, hd: 1920 }[frameSet]
+  const FRAME_COUNT = frameSet === 'sm' ? 180 : 359
+  const framesDir = { sm: 'sm', lg: 'lg30', hd: 'hd30' }[frameSet]
   // AVIF where the browser decodes it (about half the size of WebP), WebP otherwise
-  let frameSrc = (i: number) => `/assets/hero4/${frameSet}/${String(i + 1).padStart(3, '0')}.avif`
+  let frameSrc = (i: number) => `/assets/hero4/${framesDir}/${String(i + 1).padStart(3, '0')}.avif`
   const avifReady = supportsAvif().then((ok) => {
-    if (!ok) frameSrc = (i: number) => `/assets/hero4/webp/${String(i + 1).padStart(3, '0')}.webp`
+    // the WebP fallback is the 15 fps set
+    if (!ok) frameSrc = (i: number) => `/assets/hero4/webp/${String(Math.floor(i * 180 / FRAME_COUNT) + 1).padStart(3, '0')}.webp`
   })
   const canvas = $<HTMLCanvasElement>('.hero__canvas', root)!
   const ctx2d = canvas.getContext('2d', { alpha: false })!
@@ -77,9 +78,9 @@ export function homeSetup(root: HTMLElement) {
   const bitmaps = new Map<number, ImageBitmap>()
   const decoding = new Set<number>()
   // decode further ahead in the direction of travel than behind it
-  // a decoded 720p frame is 3.7 MB, so the window stays under 200 MB
-  const AHEAD = 40
-  const BEHIND = 12
+  // a decoded frame is 3.7 MB at 720p and 8 MB at 1080p, so the window stays under 300 MB
+  const AHEAD = frameSet === 'hd' ? 28 : 40
+  const BEHIND = frameSet === 'hd' ? 7 : 12
   let wanted = 0 // fractional frame position from the scroll, e.g. 41.37
   let direction = 1
   let drawnKey = ''
@@ -127,10 +128,13 @@ export function homeSetup(root: HTMLElement) {
     const w = bm.width * scale, h = bm.height * scale
     ctx2d.drawImage(bm, (cw - w) / 2, (ch - h) / 2, w, h)
   }
-  // Draws the frame under the scroll position and dissolves into the next one by the
-  // fractional remainder, so a 15 fps film moves smoothly instead of stepping.
+  // Draws the frame under the scroll position. The 15 fps set adds a short dissolve into the next
+  // frame around the halfway point to soften its steps; at 30 fps the steps are small enough
+  // that one clean frame is smoother, as it sends the GPU half the image data.
   const paint = () => {
-    const i0 = Math.floor(wanted), t = wanted - i0
+    const smooth30 = FRAME_COUNT > 180
+    const i0 = smooth30 ? Math.round(wanted) : Math.floor(wanted), f = wanted - i0
+    const t = smooth30 ? 0 : Math.min(1, Math.max(0, (f - 0.3) / 0.4))
     const base = nearest(i0)
     if (base < 0) return
     const next = base === i0 && t > 0.02 && bitmaps.has(i0 + 1) ? i0 + 1 : -1
@@ -159,9 +163,9 @@ export function homeSetup(root: HTMLElement) {
     requestAnimationFrame(() => { drawQueued = false; if (alive) paint() })
   }
 
-  // every 8th frame comes first so the whole film can be scrubbed early; the rest fill in after
+  // a sparse set of about 23 frames comes first so the whole film can be scrubbed early; the rest fill in after
   const loadOrder: number[] = []
-  for (let i = 0; i < FRAME_COUNT; i += 8) loadOrder.push(i)
+  for (let i = 0; i < FRAME_COUNT; i += FRAME_COUNT > 180 ? 16 : 8) loadOrder.push(i)
   const COARSE = loadOrder.length
   const fetchFrame = (i: number) => fetch(frameSrc(i))
     .then((r) => r.blob())
