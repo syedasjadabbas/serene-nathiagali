@@ -139,14 +139,12 @@ const routeFrag = /* glsl */ `
 uniform float uDraw;
 uniform float uTime;
 uniform vec3 uColor;
-uniform float uDash;
 varying vec2 vUv;
 void main(){
   if (vUv.x > uDraw) discard;
   // bright drawing head, which fades out once the route is complete
   float head = exp(-(uDraw - vUv.x) * 60.0) * (1.0 - smoothstep(0.96, 1.0, uDraw));
   float pulse = 0.5 + 0.5 * sin(vUv.x * 160.0 - uTime * 4.0);
-  if (uDash > 0.5 && fract(vUv.x * 40.0) < 0.45) discard;
   // stays just under the bloom threshold, so only the drawing head glows
   vec3 c = uColor * (0.82 + pulse * 0.12) + vec3(1.0, 0.95, 0.85) * head * 1.4;
   gl_FragColor = vec4(c, 1.0);
@@ -160,20 +158,63 @@ function buildRoute(points: [number, number][]) {
   return new THREE.CatmullRomCurve3(dense, false, 'centripetal')
 }
 
-function Route({ curve, draw, color, dashed, radius }: { curve: THREE.CatmullRomCurve3; draw: React.RefObject<number>; color: string; dashed?: boolean; radius: number }) {
+function Route({ curve, draw, color, radius }: { curve: THREE.CatmullRomCurve3; draw: React.RefObject<number>; color: string; radius: number }) {
   const { geometry, material } = useMemo(() => {
     const g = new THREE.TubeGeometry(curve, 600, radius, 6, false)
     const m = new THREE.ShaderMaterial({
       vertexShader: routeVert, fragmentShader: routeFrag, toneMapped: false,
-      uniforms: { uDraw: { value: 0 }, uTime: { value: 0 }, uColor: { value: new THREE.Color(color) }, uDash: { value: dashed ? 1 : 0 } },
+      uniforms: { uDraw: { value: 0 }, uTime: { value: 0 }, uColor: { value: new THREE.Color(color) } },
     })
     return { geometry: g, material: m }
-  }, [curve, color, dashed, radius])
+  }, [curve, color, radius])
   useFrame((s) => {
     material.uniforms.uDraw.value = draw.current ?? 0
     material.uniforms.uTime.value = s.clock.elapsedTime
   })
   return <mesh geometry={geometry} material={material} />
+}
+
+// The second road as a row of round dots, kept in front of the terrain: a line on the ground
+// disappears behind every ridge between Abbottabad and the resort.
+const dotsVert = /* glsl */ `
+attribute float aAlong;
+uniform float uSize;
+varying float vAlong;
+void main(){
+  vAlong = aAlong;
+  gl_PointSize = uSize;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}`
+const dotsFrag = /* glsl */ `
+uniform float uDraw;
+uniform vec3 uColor;
+varying float vAlong;
+void main(){
+  if (vAlong > uDraw) discard;
+  float r = length(gl_PointCoord - 0.5) * 2.0;
+  // a thin dark rim keeps the dots readable over pale ground
+  float dot_ = 1.0 - smoothstep(0.82, 1.0, r);
+  float core = 1.0 - smoothstep(0.6, 0.74, r);
+  gl_FragColor = vec4(mix(vec3(0.1, 0.07, 0.04), uColor, core), dot_);
+}`
+
+function DottedRoute({ curve, draw, color, count }: { curve: THREE.CatmullRomCurve3; draw: React.RefObject<number>; color: string; count: number }) {
+  const dpr = useThree((s) => s.viewport.dpr)
+  const { geometry, material } = useMemo(() => {
+    const pts = curve.getSpacedPoints(count)
+    const g = new THREE.BufferGeometry().setFromPoints(pts)
+    g.setAttribute('aAlong', new THREE.BufferAttribute(new Float32Array(pts.map((_, i) => i / count)), 1))
+    const m = new THREE.ShaderMaterial({
+      vertexShader: dotsVert, fragmentShader: dotsFrag, toneMapped: false, transparent: true, depthTest: false, depthWrite: false,
+      uniforms: { uDraw: { value: 0 }, uColor: { value: new THREE.Color(color) }, uSize: { value: 9 } },
+    })
+    return { geometry: g, material: m }
+  }, [curve, color, count])
+  useFrame(() => {
+    material.uniforms.uDraw.value = draw.current ?? 0
+    material.uniforms.uSize.value = 9 * dpr
+  })
+  return <points geometry={geometry} material={material} renderOrder={5} frustumCulled={false} />
 }
 
 /* ---------- Serene Heights beacon ---------- */
@@ -388,7 +429,7 @@ export function MapScene({ lite, onStop, labelEls }: { lite: boolean; onStop: (i
       <group>
         <Terrain segs={lite ? 160 : 240} grow={grow} scan={scan} sat={sat} />
         <Route curve={main} draw={drawMain} color="#ffd79a" radius={0.08} />
-        <Route curve={abbottabad} draw={drawAbb} color="#ffe7c4" dashed radius={0.065} />
+        <DottedRoute curve={abbottabad} draw={drawAbb} color="#ffe7c4" count={64} />
         <Beacon on={beacon} />
       </group>
       <EffectComposer multisampling={0}>
