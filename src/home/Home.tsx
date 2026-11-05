@@ -16,20 +16,27 @@ export default function Home() {
   return (
     <div ref={root} className="home">
       <div className="loader" id="loader" aria-hidden="true">
-          <div className="loader__bg">
-            <img src="/assets/img/splash-sunset.jpg" alt="" fetchPriority="high" />
+          {/* the green cover with a capsule window cut in it, and the gold logo round the window;
+              the film plays behind, and the camera pushes through the window into it */}
+          <svg className="loader__gate" aria-hidden="true">
+            <defs>
+              <mask id="loaderWindow" maskUnits="userSpaceOnUse" x="0" y="0" width="100%" height="100%">
+                <rect width="100%" height="100%" fill="#fff" />
+                <g className="loader__move"><rect x="3" y="3" width="94" height="130" rx="47" ry="47" fill="#000" /></g>
+              </mask>
+            </defs>
+            <rect width="100%" height="100%" fill="#0a1410" mask="url(#loaderWindow)" />
+            <g className="loader__move loader__logo">
+              <rect x="3" y="3" width="94" height="130" rx="47" ry="47" pathLength="1" />
+              <rect x="8" y="8" width="84" height="120" rx="42" ry="42" pathLength="1" />
+              <path d="M8 68C22 58 35 48 48 32L56 62L68 44L92 68V84C92 107.192 73.192 126 50 126C26.808 126 8 107.192 8 84V68Z" pathLength="1" />
+              <path d="M48 32L56 62L68 44L54 70Z" pathLength="1" />
+            </g>
+          </svg>
+          <div className="loader__lockup">
+            <strong>Serene Heights</strong>
+            <span>Nathia Gali &nbsp;·&nbsp; 7,906 ft</span>
           </div>
-          <div className="clouds">
-            <span className="cloud c1"></span><span className="cloud c2"></span><span className="cloud c3"></span>
-            <span className="cloud c4"></span><span className="cloud c5"></span><span className="cloud c6"></span>
-          </div>
-          <div className="pin">
-            <span className="pin__ring"></span>
-            <span className="pin__ring pin__ring--2"></span>
-            <span className="pin__dot"></span>
-            <span className="pin__label">Serene Heights<br /><small>Nathia Gali, Galyat</small></span>
-          </div>
-          <span className="loader__coords">Nathia Gali &nbsp;·&nbsp; 7,906 ft</span>
           <div className="loader__bar">
             <span className="loader__line"></span>
             <span className="loader__count" id="count">0</span>

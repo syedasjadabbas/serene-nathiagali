@@ -3,7 +3,7 @@ import { openFilm, type HeroFilm } from './heroVideo'
 import { revealPage } from '../lib/router'
 import { preload3D } from '../three/preload'
 
-// Homepage: loader → cloud dive → scroll-driven hero fly-over (canvas frame sequence) → pinned tour.
+// Homepage: loader → push through the logo → scroll-driven hero fly-over (canvas frame sequence) → pinned tour.
 // Runs inside the page's GSAP context; returns a cleanup for non-GSAP resources.
 
 let loaderPlayed = false // the loader plays once per visit; coming back to Home skips it
@@ -55,9 +55,10 @@ export function homeSetup(root: HTMLElement) {
   /* ---------- hero: canvas frame sequence ---------- */
   // The hero film: three drone shots from the project's 3D animation (forest approach,
   // ski-slope glide, rooftop crown), cut with dissolves from the 1080p masters, colour graded,
-  // lightly denoised over time so the foliage doesn't shimmer. Big screens and laptops play it as
-  // hardware-decoded video (1080p and 720p, 30 fps; see heroVideo.ts). Phones, and browsers that
-  // can't, use image frames: 15 fps at 480p on phones, 30 fps at 720p otherwise.
+  // lightly denoised over time so the foliage doesn't shimmer. It plays as hardware-decoded video
+  // in two tiers (see heroVideo.ts): a 2.7 MB version of the whole film comes first, so every
+  // scroll position has a picture even on a slow connection, then sharp frames (1080p on big
+  // screens, 720p otherwise) replace it as they arrive. Browsers that can't use image frames.
   // pick by the pixels the cover-fit needs (portrait phones crop the middle of a wide frame)
   const neededWidth = Math.max(window.innerWidth, window.innerHeight * 16 / 9) * Math.min(window.devicePixelRatio || 1, 2)
   const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData
@@ -80,6 +81,9 @@ export function homeSetup(root: HTMLElement) {
   const bitmaps = new Map<number, ImageBitmap>()
   const decoding = new Set<number>()
   let film: HeroFilm | null = null
+  // the sharp tier: frames here win over the small film's frames in `bitmaps`
+  const sharp = new Map<number, ImageBitmap>()
+  let sharpFilm: HeroFilm | null = null
   // decode further ahead in the direction of travel than behind it
   // a decoded frame is 3.7 MB at 720p and 8 MB at 1080p, so the window stays under 300 MB
   const AHEAD = frameSet === 'hd' ? 28 : 40
@@ -111,8 +115,9 @@ export function homeSetup(root: HTMLElement) {
   }
   const decodeAround = (center: number) => {
     if (film) {
-      film.seek()
-      bitmaps.forEach((bm, i) => { if (!inWindow(i, center)) { bm.close(); bitmaps.delete(i) } })
+      film.seek(center, direction)
+      sharpFilm?.seek(center, direction)
+      for (const set of [bitmaps, sharp]) set.forEach((bm, i) => { if (!inWindow(i, center)) { bm.close(); set.delete(i) } })
       return
     }
     // nearest first, alternating forward and back, reaching further forward
@@ -135,8 +140,8 @@ export function homeSetup(root: HTMLElement) {
   }
   const nearest = (i: number) => {
     for (let d = 0; d < FRAME_COUNT; d++) {
-      if (bitmaps.has(i - d)) return i - d
-      if (bitmaps.has(i + d)) return i + d
+      if (bitmaps.has(i - d) || sharp.has(i - d)) return i - d
+      if (bitmaps.has(i + d) || sharp.has(i + d)) return i + d
     }
     return -1
   }
@@ -157,11 +162,13 @@ export function homeSetup(root: HTMLElement) {
     const base = nearest(i0)
     if (base < 0) return
     const next = base === i0 && t > 0.02 && bitmaps.has(i0 + 1) ? i0 + 1 : -1
-    const key = next < 0 ? `${base}` : `${base}:${next}:${t.toFixed(2)}`
+    const best = sharp.get(base) ?? bitmaps.get(base)!
+    const key = next < 0 ? `${base}${sharp.has(base) ? 's' : ''}` : `${base}:${next}:${t.toFixed(2)}`
     if (key === drawnKey) return
     drawnKey = key
+    canvas.style.visibility = 'visible' // the poster shows until the film's first frame is in
     ctx2d.globalAlpha = 1
-    drawCover(bitmaps.get(base)!)
+    drawCover(best)
     if (next >= 0) {
       ctx2d.globalAlpha = t
       drawCover(bitmaps.get(next)!)
@@ -228,9 +235,9 @@ export function homeSetup(root: HTMLElement) {
       opened?.close()
       if (alive) void loadFrames()
     }
-    opened = await openFilm(`/assets/film/${frameSet}`, {
+    opened = await openFilm('/assets/film2/lo', {
       range: () => windowAt(Math.floor(wanted)),
-      needed: (i) => alive && inWindow(i, Math.floor(wanted)) && !bitmaps.has(i),
+      needed: (i) => alive && inWindow(i, Math.floor(wanted)) && !bitmaps.has(i) && !sharp.has(i),
       onFrame: (i, bm) => {
         if (!alive || !inWindow(i, Math.floor(wanted))) { bm.close(); return }
         bitmaps.set(i, bm)
@@ -240,15 +247,30 @@ export function homeSetup(root: HTMLElement) {
     })
     if (!opened) return false
     film = opened
-    film.seek()
+    film.seek(0, 1)
+    // once every position has a picture, the sharp tier streams in behind it
+    void film.complete.then(() => (alive ? openFilm(`/assets/film2/${frameSet}`, {
+      range: () => windowAt(Math.floor(wanted)),
+      needed: (i) => alive && inWindow(i, Math.floor(wanted)) && !sharp.has(i),
+      onFrame: (i, bm) => {
+        if (!alive || !inWindow(i, Math.floor(wanted))) { bm.close(); return }
+        sharp.set(i, bm)
+        if (Math.abs(i - wanted) < 2.5) requestDraw(wanted)
+      },
+      onFail: () => { sharpFilm?.close(); sharpFilm = null }, // the small film carries on
+    }) : null)).then((f) => {
+      if (!f) return
+      sharpFilm = f
+      f.seek(Math.floor(wanted), direction)
+    }).catch(() => {})
     await film.ready
     return true
   }
   const heroFramesReady = startFilm().catch(() => { film?.close(); film = null; return false })
     .then((playing) => (playing ? undefined : loadFrames()))
   // Starting the 3D scenes costs a moment of main-thread time: wait for a pause in the scrolling, so
-  // it never lands under a moving hand. Their sections are far enough down for that to be safe,
-  // and they still build on approach if the visitor never stops.
+  // it never lands under a moving hand, but not too long: left to the last moment they would
+  // download and build just as the visitor reaches them.
   const whenScrollRests = () => new Promise<void>((resolve) => {
     let still = 0, y = window.scrollY
     const id = setInterval(() => {
@@ -257,7 +279,9 @@ export function homeSetup(root: HTMLElement) {
       if (still >= 3 || !alive) { clearInterval(id); resolve() }
     }, 150)
   })
-  heroFramesReady.then(() => { if (alive) sizeCanvas() }).then(whenScrollRests).then(() => { if (alive) void preload3D() })
+  heroFramesReady.then(() => { if (alive) sizeCanvas() })
+    .then(() => Promise.race([whenScrollRests(), new Promise((r) => setTimeout(r, 7000))]))
+    .then(() => { if (alive) void preload3D() })
   window.addEventListener('resize', sizeCanvas)
 
   /* ---------- hero pin: fly-over, then the tour slides up over it ---------- */
@@ -384,7 +408,7 @@ export function homeSetup(root: HTMLElement) {
     const state = { shown: 0 }
     let readyDone = false
     const ready = Promise.race([
-      Promise.all([waitForImages([$<HTMLImageElement>('.loader__bg img', loader), $<HTMLImageElement>('.scene img', root)], () => {}), heroFramesReady]),
+      Promise.all([waitForImages([$<HTMLImageElement>('.scene img', root)], () => {}), heroFramesReady]),
       new Promise((resolve) => setTimeout(resolve, 4000)), // never wait more than 4s
     ]).then(() => { readyDone = true })
     const render = () => {
@@ -393,18 +417,46 @@ export function homeSetup(root: HTMLElement) {
       line.style.width = `${w}px`
       count.style.left = `${Math.max(w, count.offsetWidth)}px`
     }
-    gsap.fromTo($$('.loader__bg img', loader), { scale: 1.15 }, { scale: 1, duration: 2.4, ease: 'power2.out' })
-    const dive = () => {
+    // the capsule window: its size and place follow the screen, `push` carries it past the edges
+    const moves = $$('.loader__move', loader)
+    const gate = { push: 0 }
+    const placeGate = () => {
+      const vw = window.innerWidth, vh = window.innerHeight
+      const size = Math.min(200, Math.max(110, vw * 0.14)) / 100 // the logo is drawn 100 wide
+      const cy = vh * 0.44
+      // far enough that the capsule's curved ends clear every corner of the screen
+      const reach = Math.hypot(vw / 2, Math.max(cy, vh - cy)) * 2.9 / (94 * size)
+      const scale = size * (1 + gate.push * (reach - 1))
+      const at = `translate(${vw / 2} ${cy}) scale(${scale}) translate(-50 -68)`
+      moves.forEach((g) => g.setAttribute('transform', at))
+    }
+    placeGate()
+    window.addEventListener('resize', placeGate)
+    // frame the tower in the window: it stands at 64% across and 21% down the film's first frame,
+    // which is shown cover-fit, enlarged 1.25x from the top until the intro settles it
+    const media = $('.hero__media', root)
+    const coverW = Math.max(window.innerWidth, window.innerHeight * 16 / 9)
+    // (a phone shows only the middle of the film, so the shift stops at the edge of the picture)
+    gsap.set(media, { x: -Math.min(0.14 * coverW * 1.25, window.innerWidth * 0.34), y: window.innerHeight * 0.44 - 0.21 * coverW * 9 / 16 * 1.25 })
+    // the gold outline draws itself in, and the name rises beneath it
+    gsap.fromTo($$('.loader__logo > *', loader), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 1.3, stagger: 0.08, ease: 'power2.inOut' })
+    gsap.from($$('.loader__lockup > *', loader), { opacity: 0, y: 14, duration: 0.8, stagger: 0.1, delay: 0.5, ease: 'power3.out' })
+    const passThrough = () => {
       // snap to the very top while the loader still covers the page
       jumpTo(0)
       ScrollTrigger.refresh()
-      gsap.timeline({ defaults: { ease: 'power3.inOut' }, onComplete: finishLoading })
-        .to($$('.loader__bar, .loader__coords, .pin', loader), { autoAlpha: 0, duration: 0.3 })
-        .to($$('.loader__bg', loader), { scale: 2.2, duration: 1.1 }, '<')
-        .to($$('.cloud', loader), { scale: 3.2, opacity: 1, duration: 1.1, stagger: 0.02 }, '<')
-        .to($$('.clouds', loader), { backgroundColor: 'rgba(255,255,255,1)', duration: 0.6 }, '-=0.7')
-        .add(() => introHero(), '-=0.15')
-        .to(loader, { autoAlpha: 0, duration: 0.6, ease: 'power2.out' }, '-=0.25')
+      // a slow start and a rush at the end, like a camera moving through the window
+      const push = { t: 0 }
+      gsap.timeline({ onComplete: () => { window.removeEventListener('resize', placeGate); finishLoading() } })
+        .to($$('.loader__bar, .loader__lockup', loader), { autoAlpha: 0, y: 12, duration: 0.4, ease: 'power2.in' })
+        .to(push, {
+          t: 1, duration: 2, ease: 'sine.inOut',
+          onUpdate() { gate.push = Math.pow(push.t, 2.6); placeGate() },
+        }, 0.15)
+        // the film glides back to its own framing as the window opens
+        .to(media, { x: 0, y: 0, duration: 1.8, ease: 'sine.inOut' }, 0.15)
+        .to($$('.loader__logo', loader), { opacity: 0, duration: 0.35, ease: 'none' }, 1.7)
+        .add(() => introHero(), 1.35)
     }
     const tick = gsap.to(state, {
       shown: 100, duration: 1.6, ease: 'power1.inOut',
@@ -413,7 +465,7 @@ export function homeSetup(root: HTMLElement) {
         if (!readyDone && state.shown > 90) { state.shown = 90; tick.pause(); ready.then(() => tick.resume()) }
         render()
       },
-      onComplete: dive,
+      onComplete: passThrough,
     })
   }
 
@@ -422,8 +474,9 @@ export function homeSetup(root: HTMLElement) {
     window.removeEventListener('resize', sizeCanvas)
     window.removeEventListener('scroll', keepTop)
     body.classList.remove('is-loading')
-    bitmaps.forEach((bm) => bm.close())
-    bitmaps.clear()
+    film?.close()
+    sharpFilm?.close()
+    for (const set of [bitmaps, sharp]) { set.forEach((bm) => bm.close()); set.clear() }
     lenis?.start()
   }
 }
