@@ -1,4 +1,5 @@
 import { gsap, ScrollTrigger, lenis, jumpTo, reducedMotion } from '../lib/scroll'
+import { openFilm, type HeroFilm } from './heroVideo'
 import { revealPage } from '../lib/router'
 import { preload3D } from '../three/preload'
 
@@ -54,15 +55,16 @@ export function homeSetup(root: HTMLElement) {
   /* ---------- hero: canvas frame sequence ---------- */
   // The hero film: three drone shots from the project's 3D animation (forest approach,
   // ski-slope glide, rooftop crown), cut with dissolves from the 1080p masters, colour graded,
-  // and exported as frames, lightly denoised over time so the foliage doesn't shimmer.
-  // 30 fps at 1080p on big screens and 720p on laptops; 15 fps at 480p on phones, to keep the download small.
+  // lightly denoised over time so the foliage doesn't shimmer. Big screens and laptops play it as
+  // hardware-decoded video (1080p and 720p, 30 fps; see heroVideo.ts). Phones, and browsers that
+  // can't, use image frames: 15 fps at 480p on phones, 30 fps at 720p otherwise.
   // pick by the pixels the cover-fit needs (portrait phones crop the middle of a wide frame)
   const neededWidth = Math.max(window.innerWidth, window.innerHeight * 16 / 9) * Math.min(window.devicePixelRatio || 1, 2)
   const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData
-  const frameSet = saveData || neededWidth < 900 ? 'sm' : neededWidth < 1500 ? 'lg' : 'hd'
+  const frameSet = saveData || neededWidth < 900 ? 'sm' : neededWidth < 1500 || window.matchMedia('(pointer: coarse)').matches ? 'lg' : 'hd'
   const FRAME_W = { sm: 854, lg: 1280, hd: 1920 }[frameSet]
   const FRAME_COUNT = frameSet === 'sm' ? 193 : 386
-  const framesDir = { sm: 'sm', lg: 'lg30', hd: 'hd30' }[frameSet]
+  const framesDir = frameSet === 'sm' ? 'sm' : 'lg30'
   // AVIF where the browser decodes it (about half the size of WebP), WebP otherwise
   let frameSrc = (i: number) => `/assets/hero5/${framesDir}/${String(i + 1).padStart(3, '0')}.avif`
   const avifReady = supportsAvif().then((ok) => {
@@ -77,6 +79,7 @@ export function homeSetup(root: HTMLElement) {
   const blobs: (Blob | undefined)[] = new Array(FRAME_COUNT)
   const bitmaps = new Map<number, ImageBitmap>()
   const decoding = new Set<number>()
+  let film: HeroFilm | null = null
   // decode further ahead in the direction of travel than behind it
   // a decoded frame is 3.7 MB at 720p and 8 MB at 1080p, so the window stays under 300 MB
   const AHEAD = frameSet === 'hd' ? 28 : 40
@@ -94,9 +97,24 @@ export function homeSetup(root: HTMLElement) {
     drawnKey = ''
     requestDraw(wanted)
   }
-  const inWindow = (i: number, center: number) =>
-    direction >= 0 ? i - center <= AHEAD + 2 && center - i <= BEHIND + 2 : center - i <= AHEAD + 2 && i - center <= BEHIND + 2
+  // the frames to keep around a position: [lowest, highest]. Video can only be decoded forward from a
+  // keyframe, so going backward the window reaches down to one, or every step would decode a group again.
+  const windowAt = (center: number): [number, number] => {
+    const lo = direction >= 0 ? center - BEHIND - 2 : center - AHEAD - 2
+    const hi = direction >= 0 ? center + AHEAD + 2 : center + BEHIND + 2
+    const from = film && direction < 0 ? Math.floor(lo / film.gop) * film.gop : lo
+    return [Math.max(0, from), Math.min(FRAME_COUNT - 1, hi)]
+  }
+  const inWindow = (i: number, center: number) => {
+    const [lo, hi] = windowAt(center)
+    return i >= lo && i <= hi
+  }
   const decodeAround = (center: number) => {
+    if (film) {
+      film.seek()
+      bitmaps.forEach((bm, i) => { if (!inWindow(i, center)) { bm.close(); bitmaps.delete(i) } })
+      return
+    }
     // nearest first, alternating forward and back, reaching further forward
     for (let d = 0; d <= AHEAD; d++) {
       const order = direction >= 0 ? [center + d, center - d] : [center - d, center + d]
@@ -151,7 +169,7 @@ export function homeSetup(root: HTMLElement) {
     }
   }
   // dev only: lets the test harness read what the hero is drawing
-  if (import.meta.env.DEV) (window as unknown as { __hero: unknown }).__hero = { get wanted() { return wanted }, get drawn() { return drawnKey }, get decoded() { return bitmaps.size }, get loaded() { return blobs.filter(Boolean).length } }
+  if (import.meta.env.DEV) (window as unknown as { __hero: unknown }).__hero = { get wanted() { return wanted }, get drawn() { return drawnKey }, get decoded() { return bitmaps.size }, get loaded() { return film ? film.received() : blobs.filter(Boolean).length }, get video() { return !!film } }
   const requestDraw = (f: number) => {
     const clamped = Math.max(0, Math.min(FRAME_COUNT - 1, f))
     if (Math.floor(clamped) !== Math.floor(wanted)) {
@@ -199,10 +217,47 @@ export function homeSetup(root: HTMLElement) {
     }
     for (let k = 0; k < parallel; k++) loadNext()
   }
-  const heroFramesReady = avifReady.then(() => fetchAll(loadOrder.slice(0, COARSE), 6))
-  heroFramesReady.then(() => { if (alive) sizeCanvas() })
-  // the film first: waiting for the 3D scenes left the hero stepping through coarse frames
-  heroFramesReady.then(() => { if (alive) { fetchRest(4); void preload3D() } })
+  let framesLoading: Promise<void> | null = null
+  const loadFrames = () => (framesLoading ??= avifReady.then(() => fetchAll(loadOrder.slice(0, COARSE), 6)).then(() => { if (alive) fetchRest(4) }))
+  // video where the browser can play it, image frames otherwise (or if the decoder gives up)
+  const startFilm = async () => {
+    if (frameSet === 'sm') return false
+    let opened: HeroFilm | null = null
+    const fallBack = () => {
+      film = null
+      opened?.close()
+      if (alive) void loadFrames()
+    }
+    opened = await openFilm(`/assets/film/${frameSet}`, {
+      range: () => windowAt(Math.floor(wanted)),
+      needed: (i) => alive && inWindow(i, Math.floor(wanted)) && !bitmaps.has(i),
+      onFrame: (i, bm) => {
+        if (!alive || !inWindow(i, Math.floor(wanted))) { bm.close(); return }
+        bitmaps.set(i, bm)
+        if (Math.abs(i - wanted) < 2.5 || !drawnKey) requestDraw(wanted)
+      },
+      onFail: fallBack,
+    })
+    if (!opened) return false
+    film = opened
+    film.seek()
+    await film.ready
+    return true
+  }
+  const heroFramesReady = startFilm().catch(() => { film?.close(); film = null; return false })
+    .then((playing) => (playing ? undefined : loadFrames()))
+  // Starting the 3D scenes costs a moment of main-thread time: wait for a pause in the scrolling, so
+  // it never lands under a moving hand. Their sections are far enough down for that to be safe,
+  // and they still build on approach if the visitor never stops.
+  const whenScrollRests = () => new Promise<void>((resolve) => {
+    let still = 0, y = window.scrollY
+    const id = setInterval(() => {
+      still = window.scrollY === y ? still + 1 : 0
+      y = window.scrollY
+      if (still >= 3 || !alive) { clearInterval(id); resolve() }
+    }, 150)
+  })
+  heroFramesReady.then(() => { if (alive) sizeCanvas() }).then(whenScrollRests).then(() => { if (alive) void preload3D() })
   window.addEventListener('resize', sizeCanvas)
 
   /* ---------- hero pin: fly-over, then the tour slides up over it ---------- */
@@ -221,8 +276,8 @@ export function homeSetup(root: HTMLElement) {
   }
 
   if (!reducedMotion) {
-    // 6.5 screens of scrolling for the 13 s film: slow enough to feel like moving through the place
-    const FLY = 6.5, OVERLAP = 1
+    // about 4 screens of scrolling for the 13 s film: long pins made the page feel heavy to scroll
+    const FLY = 4.2, OVERLAP = 1
     const fly = { p: 0 }
     // the closing crown shot is short, so it takes a longer stretch of the scroll: 30% for its 13% of the film
     const filmAt = (p: number) => (p < 0.7 ? (p / 0.7) * 0.87 : 0.87 + ((p - 0.7) / 0.3) * 0.13)
@@ -230,8 +285,8 @@ export function homeSetup(root: HTMLElement) {
       defaults: { ease: 'none' },
       scrollTrigger: {
         trigger: $('.hero', root), start: 'top top', end: () => `+=${window.innerHeight * (FLY + OVERLAP)}`,
-        // short catch-up: the page already scrolls smoothly, so a long scrub made the film trail the hand
-        pin: true, pinSpacing: true, scrub: 0.5, anticipatePin: 1, invalidateOnRefresh: true,
+        // barely any catch-up: the page already scrolls smoothly, so more makes the film trail the hand
+        pin: true, pinSpacing: true, scrub: 0.12, anticipatePin: 1, invalidateOnRefresh: true,
       },
     })
       .to(fly, { p: 1, duration: FLY, onUpdate: () => { requestDraw(filmAt(fly.p) * (FRAME_COUNT - 1)); updateHud(fly.p) } }, 0)
@@ -272,13 +327,13 @@ export function homeSetup(root: HTMLElement) {
     [1.3, 1.08, -2, 2, -3, 2],
     [1.2, 1.02, 3, -3, 3, -3],
   ]
-  const SLOT = 1.8, WIPE = 0.7, END_HOLD = 0.6
+  const SLOT = 1.1, WIPE = 0.7, END_HOLD = 0.4
   const tourUnits = (n - 1) + WIPE / 2 + END_HOLD
   const tour = gsap.timeline({
     defaults: { ease: 'none' },
     scrollTrigger: {
       trigger: $('.tour', root), start: 'top top', end: () => `+=${window.innerHeight * SLOT * tourUnits}`,
-      pin: $('.tour__stage', root), scrub: 1.2, anticipatePin: 1, invalidateOnRefresh: true,
+      pin: $('.tour__stage', root), scrub: 0.3, anticipatePin: 1, invalidateOnRefresh: true,
     },
   })
   scenes.forEach((scene, i) => {

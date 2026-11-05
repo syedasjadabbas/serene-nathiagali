@@ -229,16 +229,6 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
     linear-gradient(0deg, rgba(5,5,8,.85) 0%, rgba(5,5,8,.45) 26%, rgba(5,5,8,0) 55%),
     radial-gradient(55% 55% at 88% 78%, rgba(5,5,8,.55) 0%, rgba(5,5,8,0) 70%);
 }
-/* fine film grain over the fly-over, for a cinematic finish */
-.hero__grain {
-  position: absolute; inset: -50%; pointer-events: none; opacity: .09; mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  animation: grain 1.2s steps(6) infinite;
-}
-@keyframes grain {
-  0% { transform: translate(0, 0); } 20% { transform: translate(-3%, 2%); } 40% { transform: translate(2%, -3%); }
-  60% { transform: translate(-2%, -1%); } 80% { transform: translate(3%, 3%); } 100% { transform: translate(0, 0); }
-}
 .hero { background: var(--ink); }
 .hero__dim { position: absolute; inset: 0; background: #050508; opacity: 0; pointer-events: none; }
 /* The tour overlaps the hero's last screen so it can slide up over it (see main.js). */

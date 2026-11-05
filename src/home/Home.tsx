@@ -56,7 +56,6 @@ export default function Home() {
           <span>Serene Heights Nathia Gali</span>
           <strong>7,906 ft above the Galyat</strong>
         </p>
-        <div className="hero__grain" aria-hidden="true"></div>
         <div className="hero__hud" aria-hidden="true">
           <span className="hero__hud-count"><b>01</b> / 03</span>
           <span className="hero__hud-name">The forest</span>

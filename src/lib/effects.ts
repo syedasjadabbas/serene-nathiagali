@@ -212,7 +212,8 @@ export function initScrollEffects(root: HTMLElement) {
       const distance = () => row.scrollWidth - window.innerWidth + 80
       gsap.to(row, {
         x: () => -distance(), ease: 'none',
-        scrollTrigger: { trigger: sec, start: 'top top', end: () => `+=${distance()}`, pin: true, scrub: 1, invalidateOnRefresh: true, anticipatePin: 1 },
+        // the row travels faster than the scroll, so the pin doesn't feel like a long detour
+        scrollTrigger: { trigger: sec, start: 'top top', end: () => `+=${distance() * 0.6}`, pin: true, scrub: 0.3, invalidateOnRefresh: true, anticipatePin: 1 },
       })
     })
   })

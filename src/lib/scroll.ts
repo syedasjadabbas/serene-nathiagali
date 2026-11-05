@@ -19,7 +19,7 @@ export let lenis: Lenis | null = null
 // Smooth scroll driven by GSAP's ticker so ScrollTrigger and Lenis stay in sync.
 export function startSmoothScroll() {
   if (lenis || reducedMotion) return lenis
-  lenis = new Lenis({ lerp: 0.09, smoothWheel: true })
+  lenis = new Lenis({ lerp: 0.14, smoothWheel: true })
   lenis.on('scroll', ScrollTrigger.update)
   gsap.ticker.add((t) => lenis?.raf(t * 1000))
   gsap.ticker.lagSmoothing(0)
