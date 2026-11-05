@@ -43,6 +43,14 @@ function soft(x: number, z: number) {
   return sum / 25
 }
 
+// The building is designed for a slope: its west end starts at ground level, its east wing about
+// 4.7 m up, and the entrance terrace sits 18 m up, level with the road. The land has to rise the
+// same way or that wing hangs in the air. (Metres in the model; 0.28 scene units to the metre.)
+function hillside(x: number, r: number) {
+  const m = x / 0.28
+  return (4.7 * smooth(-7, -1, m) + 13.6 * smooth(21, 31, m)) * 0.28 * (1 - smooth(36, 90, r))
+}
+
 /** Ground height at scene x,z: level round the building, the real terrain further out. */
 function makeHeight() {
   const base = soft(SX, SZ)
@@ -53,8 +61,10 @@ function makeHeight() {
     const e = r > 170 ? elevation(kx, kz) : soft(kx, kz)
     const real = (e - base) * 1000 * PER_M
     // dead level under the building, so nothing can dip below its base
-    const near = (fbm(x * 0.05 + 7, z * 0.05) - 0.5) * 3 * smooth(PLATEAU - 6, PLATEAU + 14, r) - smooth(PLATEAU, 70, r) * 3
-    return near * (1 - smooth(40, 120, r)) + real * smooth(PLATEAU, 120, r)
+    const near = (fbm(x * 0.05 + 7, z * 0.05) - 0.5) * 2 * smooth(PLATEAU - 6, PLATEAU + 20, r)
+    // the real ridge falls away fast; easing into it over a long way keeps that from reading as
+    // a cliff rim under the building when the camera is low
+    return near * (1 - smooth(60, 170, r)) + real * smooth(PLATEAU + 16, 210, r) + hillside(x, r)
   }
 }
 
@@ -64,7 +74,7 @@ async function terrainGeometry(height: (x: number, z: number) => number) {
   const pos = new Float32Array((RINGS + 1) * SPOKES * 3)
   for (let i = 0; i <= RINGS; i++) {
     if (i % 10 === 0) await breathe()
-    const r = 2 + (REACH - 2) * Math.pow(i / RINGS, 2.2)
+    const r = REACH * Math.pow(i / RINGS, 2.2)
     for (let j = 0; j < SPOKES; j++) {
       const a = (j / SPOKES) * Math.PI * 2
       const x = Math.cos(a) * r, z = Math.sin(a) * r
@@ -75,7 +85,7 @@ async function terrainGeometry(height: (x: number, z: number) => number) {
   for (let i = 0; i < RINGS; i++) {
     for (let j = 0; j < SPOKES; j++) {
       const a = i * SPOKES + j, b = i * SPOKES + (j + 1) % SPOKES, c = a + SPOKES, d = b + SPOKES
-      idx.push(a, c, b, b, c, d)
+      idx.push(a, b, c, b, d, c)
     }
   }
   const g = new THREE.BufferGeometry()
@@ -94,7 +104,7 @@ async function terrainGeometry(height: (x: number, z: number) => number) {
     const fine = fbm(x * 0.5 + 3, z * 0.5)
     const steep = 1 - nrm.getY(v)
     const bare = smooth(0.42, 0.6, patch + steep * 0.8 + fine * 0.12 - y * 0.0012)
-    c.copy(snow).lerp(fine > 0.5 ? frosted : forest, bare * smooth(PLATEAU + 4, 52, r))
+    c.copy(snow).lerp(fine > 0.5 ? frosted : forest, bare * smooth(130, 200, r))
     col.set([c.r, c.g, c.b], v * 3)
   }
   g.setAttribute('color', new THREE.BufferAttribute(col, 3))
