@@ -9,7 +9,7 @@ import { elevation, loadDem, project, SERENE } from './geo'
 // dusk sky. Distance is compressed so the ridges fit the frame; their outlines are true.
 const KM = 14 // scene units per km of ground
 const PER_M = 0.032 // scene units per metre of height
-const PLATEAU = 16 // the building's level ground
+const PLATEAU = 24 // the building's level ground
 const REACH = 430 // where the land ends, inside the sky
 const [SX, SZ] = project(SERENE.lat, SERENE.lon)
 
@@ -52,8 +52,9 @@ function makeHeight() {
     // near the building the 200 m elevation cells would show as a grid in the lighting
     const e = r > 170 ? elevation(kx, kz) : soft(kx, kz)
     const real = (e - base) * 1000 * PER_M
-    const near = (fbm(x * 0.05 + 7, z * 0.05) - 0.5) * 3 - smooth(PLATEAU, 60, r) * 3
-    return near * (1 - smooth(30, 110, r)) + real * smooth(PLATEAU, 110, r)
+    // dead level under the building, so nothing can dip below its base
+    const near = (fbm(x * 0.05 + 7, z * 0.05) - 0.5) * 3 * smooth(PLATEAU - 6, PLATEAU + 14, r) - smooth(PLATEAU, 70, r) * 3
+    return near * (1 - smooth(40, 120, r)) + real * smooth(PLATEAU, 120, r)
   }
 }
 
@@ -93,7 +94,7 @@ async function terrainGeometry(height: (x: number, z: number) => number) {
     const fine = fbm(x * 0.5 + 3, z * 0.5)
     const steep = 1 - nrm.getY(v)
     const bare = smooth(0.42, 0.6, patch + steep * 0.8 + fine * 0.12 - y * 0.0012)
-    c.copy(snow).lerp(fine > 0.5 ? frosted : forest, bare * smooth(PLATEAU + 6, 40, r))
+    c.copy(snow).lerp(fine > 0.5 ? frosted : forest, bare * smooth(PLATEAU + 4, 52, r))
     col.set([c.r, c.g, c.b], v * 3)
   }
   g.setAttribute('color', new THREE.BufferAttribute(col, 3))
@@ -212,6 +213,24 @@ function canopied(m: THREE.MeshStandardMaterial, map: THREE.Texture) {
   }
 }
 
+// Hundreds of faint strokes leave small steps in a canvas, and stretched across the view they
+// show as a lattice. Shrinking and regrowing the image smooths them away (and works in every browser).
+function soften(c: HTMLCanvasElement, by: number) {
+  const small = document.createElement('canvas')
+  small.width = c.width / by; small.height = c.height / by
+  const s = small.getContext('2d')!
+  s.imageSmoothingQuality = 'high'
+  s.drawImage(c, 0, 0, small.width, small.height)
+  const g = c.getContext('2d')!
+  g.save()
+  g.setTransform(1, 0, 0, 1, 0, 0)
+  g.imageSmoothingQuality = 'high'
+  g.clearRect(0, 0, c.width, c.height)
+  g.drawImage(small, 0, 0, c.width, c.height)
+  g.restore()
+  return c
+}
+
 // dusk sky painted once onto a canvas: slate zenith, clouds, a warm band at the horizon
 function skyTexture() {
   const W = 2048, H = 1024
@@ -252,7 +271,7 @@ function skyTexture() {
     puff(x, y, 60 + r() * 220, 8 + r() * 26, '22,30,46', 0.1 + r() * 0.16)
     if (r() > 0.45) puff(x + 30, y + 10, 40 + r() * 140, 5 + r() * 12, low > 0.86 ? '236,206,178' : '148,162,186', 0.07 + r() * 0.13)
   }
-  const t = new THREE.CanvasTexture(c)
+  const t = new THREE.CanvasTexture(soften(c, 4))
   t.colorSpace = THREE.SRGBColorSpace
   t.wrapS = THREE.RepeatWrapping
   return t
@@ -277,11 +296,27 @@ function cloudTexture() {
       g.fillRect(x + dx - rad, y + dy - rad, rad * 2, rad * 2)
     }
   }
-  const t = new THREE.CanvasTexture(c)
+  const t = new THREE.CanvasTexture(soften(c, 4))
   t.colorSpace = THREE.SRGBColorSpace
   t.wrapS = t.wrapT = THREE.RepeatWrapping
   t.repeat.set(3, 3)
   return t
+}
+
+// keeps the cloud out in the far valleys: close in it read as a flat white floor under the building
+function cloudReachTexture() {
+  const S = 256
+  const c = document.createElement('canvas')
+  c.width = S; c.height = S
+  const g = c.getContext('2d')!
+  const p = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2)
+  p.addColorStop(0, '#000')
+  p.addColorStop(0.5, '#000')
+  p.addColorStop(0.8, '#fff')
+  p.addColorStop(1, '#fff')
+  g.fillStyle = p
+  g.fillRect(0, 0, S, S)
+  return new THREE.CanvasTexture(c)
 }
 
 // Built once, in steps, before the scene first draws: the shaders then compile in the background
@@ -296,17 +331,18 @@ async function build() {
   const sky = skyTexture()
   await breathe()
   const cloudMap = cloudTexture()
+  const cloudReach = cloudReachTexture()
   await breathe()
   const soil = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 })
   canopied(soil, canopyTexture())
   await breathe()
   const pine = pineTexture()
   await breathe()
-  return { ground, soil, sky, cloudMap, trees: forest(height, pine) }
+  return { ground, soil, sky, cloudMap, cloudReach, trees: forest(height, pine) }
 }
 
 export function Landscape() {
-  const { ground, soil, sky, cloudMap, trees } = use((land ??= build()))
+  const { ground, soil, sky, cloudMap, cloudReach, trees } = use((land ??= build()))
   const clouds = useRef<THREE.MeshBasicMaterial>(null)
   useFrame((_, dt) => { if (clouds.current?.map) clouds.current.map.offset.x += dt * 0.0016 })
   return (
@@ -314,13 +350,13 @@ export function Landscape() {
       {/* a plain dome: as scene.background the sky would be converted to a cube map at first draw */}
       <mesh scale={[-1, 1, 1]} renderOrder={-1}>
         <sphereGeometry args={[900, 32, 24]} />
-        <meshBasicMaterial map={sky} fog={false} side={THREE.BackSide} depthWrite={false} toneMapped={false} />
+        <meshBasicMaterial map={sky} fog={false} side={THREE.BackSide} depthWrite={false} toneMapped={false} dithering />
       </mesh>
       <mesh geometry={ground} material={soil} receiveShadow />
       <primitive object={trees} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -30, 0]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -34, 0]}>
         <circleGeometry args={[REACH, 48]} />
-        <meshBasicMaterial ref={clouds} map={cloudMap} transparent opacity={0.95} depthWrite={false} />
+        <meshBasicMaterial ref={clouds} map={cloudMap} alphaMap={cloudReach} color="#d3d5dd" transparent opacity={0.85} depthWrite={false} />
       </mesh>
     </group>
   )
