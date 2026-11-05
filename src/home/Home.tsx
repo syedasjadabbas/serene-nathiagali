@@ -5,6 +5,7 @@ import { usePage } from '../lib/usePage'
 import { homeSetup } from './homeSetup'
 import { MapSection } from '../components/MapSection'
 import { TowerModel } from '../components/TowerModel'
+import { PaymentCalc } from '../components/PaymentCalc'
 
 const playWalkthrough = () => openLightbox(
   '<video src="/assets/video/walkthrough.mp4" poster="/assets/video/walkthrough.jpg" controls autoplay playsinline></video>')
@@ -16,7 +17,7 @@ export default function Home() {
     <div ref={root} className="home">
       <div className="loader" id="loader" aria-hidden="true">
           <div className="loader__bg">
-            <img src="/assets/img/loader.jpg" alt="" fetchPriority="high" />
+            <img src="/assets/img/splash-sunset.jpg" alt="" fetchPriority="high" />
           </div>
           <div className="clouds">
             <span className="cloud c1"></span><span className="cloud c2"></span><span className="cloud c3"></span>
@@ -241,20 +242,7 @@ export default function Home() {
         </ul>
 
         <div className="payment__grid">
-          <div className="calc">
-            <h3>Estimate your payments</h3>
-            <label className="calc__field">
-              <span>Apartment area</span>
-              <span className="calc__input"><input id="calcArea" type="number" min="300" max="3000" step="1" defaultValue="600" inputMode="numeric" /> sq ft</span>
-            </label>
-            <input id="calcRange" type="range" min="400" max="1600" step="1" defaultValue="600" aria-label="Apartment area in square feet" />
-            <dl className="calc__out">
-              <div><dt>Total price</dt><dd id="calcTotal">—</dd></div>
-              <div><dt>Booking (30%)</dt><dd id="calcBooking">—</dd></div>
-              <div><dt>Monthly × 36</dt><dd id="calcMonthly">—</dd></div>
-            </dl>
-            <p className="calc__note">Indicative only, assuming equal installments. Final pricing and schedule are confirmed by the sales team.</p>
-          </div>
+          <PaymentCalc />
 
           <div className="benefits">
             <h3>Our hotel apartments model</h3>

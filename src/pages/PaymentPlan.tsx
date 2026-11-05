@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { Link } from '../lib/router'
 import { usePage } from '../lib/usePage'
+import { PaymentCalc } from '../components/PaymentCalc'
 
 export default function PaymentPlan() {
   const root = useRef<HTMLDivElement>(null)
@@ -25,20 +26,7 @@ export default function PaymentPlan() {
         </ul>
 
         <div className="payment__grid">
-          <div className="calc">
-            <h3>Estimate your payments</h3>
-            <label className="calc__field">
-              <span>Apartment area</span>
-              <span className="calc__input"><input id="calcArea" type="number" min="300" max="3000" step="1" defaultValue="600" inputMode="numeric" /> sq ft</span>
-            </label>
-            <input id="calcRange" type="range" min="400" max="1600" step="1" defaultValue="600" aria-label="Apartment area in square feet" />
-            <dl className="calc__out">
-              <div><dt>Total price</dt><dd id="calcTotal">—</dd></div>
-              <div><dt>Booking (30%)</dt><dd id="calcBooking">—</dd></div>
-              <div><dt>Monthly × 36</dt><dd id="calcMonthly">—</dd></div>
-            </dl>
-            <p className="calc__note">Indicative only, assuming equal installments. Final pricing and schedule are confirmed by the sales team.</p>
-          </div>
+          <PaymentCalc />
 
           <div className="benefits">
             <h3>Owner benefits</h3>

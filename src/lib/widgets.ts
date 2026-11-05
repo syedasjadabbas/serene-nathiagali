@@ -112,30 +112,6 @@ function gallery(root: ParentNode): Cleanup | void {
   return () => { el.removeEventListener('click', onShot); filters?.removeEventListener('click', onFilter) }
 }
 
-/* ---------- payment calculator ---------- */
-const PRICE_PER_SQFT = 40000
-const pkr = (n: number) => 'PKR ' + Math.round(n).toLocaleString('en-PK')
-
-function calculator(root: ParentNode): Cleanup | void {
-  const area = $<HTMLInputElement>('#calcArea', root)
-  const range = $<HTMLInputElement>('#calcRange', root)
-  if (!area || !range) return
-  const update = (sqft: number) => {
-    const total = sqft * PRICE_PER_SQFT
-    const booking = total * 0.3
-    const set = (id: string, v: string) => { const n = $(id, root); if (n) n.textContent = v }
-    set('#calcTotal', pkr(total))
-    set('#calcBooking', pkr(booking))
-    set('#calcMonthly', pkr((total - booking) / 36))
-  }
-  const onArea = () => { const v = Math.max(0, +area.value || 0); range.value = String(v); update(v) }
-  const onRange = () => { area.value = range.value; update(+range.value) }
-  area.addEventListener('input', onArea)
-  range.addEventListener('input', onRange)
-  update(+area.value)
-  return () => { area.removeEventListener('input', onArea); range.removeEventListener('input', onRange) }
-}
-
 /* ---------- construction progress ---------- */
 export const MILESTONES: [string, string][] = [
   ['April 2026', 'lxc9yQty3BA'],
@@ -204,6 +180,6 @@ function enquiryForm(root: ParentNode): Cleanup | void {
 
 /** Starts every widget found in `root`. */
 export function initWidgets(root: ParentNode): Cleanup {
-  const offs = [floorPlans, gallery, calculator, progress, enquiryForm].map((w) => w(root)).filter(Boolean) as Cleanup[]
+  const offs = [floorPlans, gallery, progress, enquiryForm].map((w) => w(root)).filter(Boolean) as Cleanup[]
   return () => offs.forEach((off) => off())
 }
