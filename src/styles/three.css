@@ -166,3 +166,24 @@
   .seg button { flex: 1; text-align: center; padding: 10px 8px; }
   .floors ol { max-height: none; }
 }
+
+/* ---------- floor plan in 3D ---------- */
+.plan3d-open { margin: 14px 0 6px; }
+.plan3d-open--dark { display: flex; width: fit-content; margin: 22px auto 0; background: var(--ink); color: var(--white); border-color: var(--ink); }
+.plan3d { position: fixed; inset: 0; z-index: 130; background: #18332a; color: var(--white); touch-action: none; }
+.plan3d .canvas-wrap { position: absolute; inset: 0; }
+.plan3d__fallback { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.plan3d__top { position: absolute; z-index: 2; top: max(14px, env(safe-area-inset-top, 0px)); left: 14px; right: 14px; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.plan3d__floors { display: flex; gap: 6px; min-width: 0; overflow-x: auto; scrollbar-width: none; padding: 5px; border-radius: 999px; background: rgba(12, 28, 22, .78); }
+.plan3d__floors::-webkit-scrollbar { display: none; }
+.plan3d__floors button { all: unset; flex: none; cursor: pointer; padding: 9px 15px; border-radius: 999px; font-size: 13px; white-space: nowrap; color: rgba(255, 255, 255, .78); }
+.plan3d__floors button:hover { color: var(--white); }
+.plan3d__floors button[aria-pressed="true"] { background: var(--white); color: var(--ink); }
+.plan3d__floors button:focus-visible, .plan3d__btn:focus-visible { outline: 2px solid var(--white); outline-offset: 2px; }
+.plan3d__btn { all: unset; flex: none; cursor: pointer; width: 44px; height: 44px; display: grid; place-items: center; font-size: 17px; border-radius: 50%; color: var(--white); background: rgba(12, 28, 22, .78); }
+.plan3d__btn:hover { background: var(--white); color: var(--ink); }
+.plan3d__foot { position: absolute; z-index: 2; bottom: max(30px, env(safe-area-inset-bottom, 0px)); left: 14px; right: 14px; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; pointer-events: none; }
+.plan3d__foot > * { pointer-events: auto; }
+.plan3d__hint { padding: 9px 14px; border-radius: 999px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; background: rgba(12, 28, 22, .78); }
+.plan3d__tools { display: flex; gap: 8px; }
+.plan3d__note { position: absolute; z-index: 2; left: 0; right: 0; bottom: 8px; margin: 0; text-align: center; font-size: 11px; color: rgba(255, 255, 255, .6); pointer-events: none; }

@@ -298,7 +298,7 @@ export default function Home() {
           <span className="eyebrow">Enquire now</span>
           <h2 className="contact__title split">Your home<br />in the highlands</h2>
           <p>Book a visit, request a brochure or ask about the 36-month payment plan.</p>
-          <a className="btn btn--light" href="mailto:info@sereneheightsnathiagali.com">info@sereneheightsnathiagali.com <span className="btn__dot">→</span></a>
+          <a className="btn btn--light" href="mailto:sereneheightsnathiagali@gmail.com">sereneheightsnathiagali@gmail.com <span className="btn__dot">→</span></a>
           <div className="phones">
             <a href="tel:042111111744">042-111-111-744</a>
             <a href="tel:+923008497999">+92 300 8497999</a>

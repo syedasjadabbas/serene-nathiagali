@@ -166,7 +166,7 @@ function enquiryForm(root: ParentNode): Cleanup | void {
     ].filter(Boolean).join('\n')
     const via = (e.submitter as HTMLButtonElement | null)?.value || 'whatsapp'
     const url = via === 'email'
-      ? `mailto:info@sereneheightsnathiagali.com?subject=${encodeURIComponent('Enquiry — Serene Heights Nathia Gali')}&body=${encodeURIComponent(text)}`
+      ? `mailto:sereneheightsnathiagali@gmail.com?subject=${encodeURIComponent('Enquiry — Serene Heights Nathia Gali')}&body=${encodeURIComponent(text)}`
       : `https://wa.me/923214979447?text=${encodeURIComponent(text)}`
     window.open(url, via === 'email' ? '_self' : '_blank', 'noopener')
     const note = $('.form__note', form)

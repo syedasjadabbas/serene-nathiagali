@@ -1,4 +1,4 @@
-import { lazy, useMemo, useRef, useState } from 'react'
+import { Suspense, lazy, useMemo, useRef, useState } from 'react'
 import { LazyCanvas } from '../three/LazyCanvas'
 import type { FloorRef } from '../three/SelectorScene'
 import { TOWERS } from '../three/towers'
@@ -7,6 +7,7 @@ import { Link } from '../lib/router'
 import { openLightbox, lightboxImage } from '../lib/lightbox'
 import { floorPlanSrc } from '../lib/widgets'
 
+const Plan3DViewer = lazy(() => import('./Plan3DViewer'))
 const SelectorScene = lazy(() => import('../three/SelectorScene').then((m) => ({ default: m.SelectorScene })))
 
 const TOWER_NAMES = ['Tower A', 'Tower B', 'Tower C']
@@ -23,6 +24,7 @@ export function TowerModel() {
   const [tower, setTower] = useState<number | null>(null)
   const [floor, setFloor] = useState<number | null>(null)
   const [hover, setHover] = useState<FloorRef | null>(null)
+  const [view3d, setView3d] = useState<string | null>(null)
   const spin = useRef(0.19)
   const webgl = useMemo(() => hasWebGL(), [])
 
@@ -99,6 +101,7 @@ export function TowerModel() {
                     <img src={floorPlanSrc(plan)} alt={`${ordinal(floor)} floor plan`} />
                     <span>View full size ↗</span>
                   </button>
+                  <button type="button" className="btn btn--sm plan3d-open" onClick={() => setView3d(plan)}>View in 3D <span className="btn__dot">→</span></button>
                   <p className="fine">Apartment numbers and areas (sq ft) are listed on the plan. Layouts may vary between towers — please confirm with the sales team.</p>
                 </>
               ) : (
@@ -109,6 +112,7 @@ export function TowerModel() {
           )}
         </aside>
       </div>
+      {view3d && <Suspense fallback={null}><Plan3DViewer plan={view3d} onClose={() => setView3d(null)} /></Suspense>}
     </section>
   )
 }

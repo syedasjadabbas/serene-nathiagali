@@ -69,7 +69,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <li key={to}><Link to={to} aria-current={path === to ? 'page' : undefined}>{label}</Link></li>
           ))}
         </ul>
-        <p className="menu__foot">042-111-111-744 &nbsp;·&nbsp; info@sereneheightsnathiagali.com</p>
+        <p className="menu__foot"><a href="tel:042111111744">042-111-111-744</a> &nbsp;·&nbsp; <a href="mailto:sereneheightsnathiagali@gmail.com">sereneheightsnathiagali@gmail.com</a></p>
       </nav>
 
       <main id="top">{children}</main>

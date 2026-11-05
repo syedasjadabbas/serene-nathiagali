@@ -1,8 +1,10 @@
-import { useRef } from 'react'
+import { Suspense, lazy, useRef, useState } from 'react'
 import { Link } from '../lib/router'
 import { usePage } from '../lib/usePage'
 import { TowerModel } from '../components/TowerModel'
 import { preload3D } from '../three/preload'
+
+const Plan3DViewer = lazy(() => import('../components/Plan3DViewer'))
 
 // this page opens on the 3D model: start loading it before React has even rendered
 preload3D()
@@ -10,6 +12,9 @@ preload3D()
 export default function FloorPlans() {
   const root = useRef<HTMLDivElement>(null)
   usePage(root, 'Floor Plans')
+  const [view3d, setView3d] = useState<string | null>(null)
+  // the floor tabs swap this image, so its file name says which floor is showing
+  const open3d = () => setView3d(document.querySelector<HTMLImageElement>('#planImg')?.src.match(/([^/]+)\.jpg/)?.[1] ?? 'ground')
   return (
     <div ref={root}>
       {/* ============ PAGE HERO ============ */}
@@ -38,6 +43,8 @@ export default function FloorPlans() {
             </button>
             <figcaption><span id="planName">Ground floor</span><span id="planNote"></span></figcaption>
           </figure>
+          <button type="button" className="btn btn--sm plan3d-open plan3d-open--dark" onClick={open3d}>View in 3D <span className="btn__dot">→</span></button>
+          {view3d && <Suspense fallback={null}><Plan3DViewer plan={view3d} onClose={() => setView3d(null)} /></Suspense>}
         </section>
       </div>
 

@@ -23,7 +23,7 @@ export default function Contact() {
             <a className="info-card" href="tel:042111111744"><span>UAN</span><strong>042-111-111-744</strong></a>
             <a className="info-card" href="tel:+923008497999"><span>Phone</span><strong>+92 300 8497999</strong></a>
             <a className="info-card" href="https://wa.me/923214979447" target="_blank" rel="noopener"><span>WhatsApp</span><strong>+92 321 4979447</strong></a>
-            <a className="info-card" href="mailto:info@sereneheightsnathiagali.com"><span>Email</span><strong>info@sereneheightsnathiagali.com</strong></a>
+            <a className="info-card" href="mailto:sereneheightsnathiagali@gmail.com"><span>Email</span><strong>sereneheightsnathiagali@gmail.com</strong></a>
             <div className="info-card"><span>Project</span><strong>Serene Heights, 1.5 km Kala Bagh Air Base Road, Nathia Gali</strong></div>
             <div className="info-card"><span>Head office</span><strong>DM Consortium, H. No. 71 C3 Gulberg III, Park View Lane, Lahore</strong></div>
           </div>
