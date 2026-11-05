@@ -11,7 +11,7 @@ const FLOORS = [
   ['5th', '5th'], ['6th', '6th'], ['7th', '7th'], ['8th', '8th'],
 ] as const
 
-/** A floor plan raised into 3D, full screen. Loaded only when a visitor opens it. */
+/** A floor plan raised into 3D, in a popup over the page. Loaded only when a visitor opens it. */
 export default function Plan3DViewer({ plan, onClose }: { plan: string; onClose: () => void }) {
   const [name, setName] = useState(plan)
   const spin = useRef(0.35)
@@ -54,8 +54,9 @@ export default function Plan3DViewer({ plan, onClose }: { plan: string; onClose:
 
   // on the body, as the page's pinned sections would otherwise trap a fixed element
   return createPortal(
-    <div className="plan3d" role="dialog" aria-modal="true" aria-label="Floor plan in 3D"
-      {...(coarsePointer ? { onTouchStart, onTouchMove, onTouchEnd, onTouchCancel: onTouchEnd } : {})}>
+    <div className="plan3d" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="plan3d__dialog" role="dialog" aria-modal="true" aria-label="Floor plan in 3D"
+        {...(coarsePointer ? { onTouchStart, onTouchMove, onTouchEnd, onTouchCancel: onTouchEnd } : {})}>
       <LazyCanvas scene={PlanScene} sceneProps={{ name, spin, zoom, tilt, full: true }} premount
         canvas={{ dpr: [1, 1.5], shadows: true, camera: { fov: 35, position: [5.2, 11.2, 12.3] }, gl: { antialias: true } }}
         fallback={<img className="plan3d__fallback" src={floorPlanSrc(name)} alt="Floor plan" />} />
@@ -77,6 +78,7 @@ export default function Plan3DViewer({ plan, onClose }: { plan: string; onClose:
         </div>
       </div>
       <p className="plan3d__note">Raised from the architect’s drawings. Indicative only.</p>
+      </div>
     </div>,
     document.body,
   )
