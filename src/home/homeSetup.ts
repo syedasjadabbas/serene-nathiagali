@@ -286,7 +286,7 @@ export function homeSetup(root: HTMLElement) {
 
   /* ---------- hero pin: fly-over, then the tour slides up over it ---------- */
   /* ---------- chapter counter for the film's three shots ---------- */
-  const CHAPTERS = [[0, 'The forest'], [0.41, 'The slope'], [0.69, 'The crown']] as const
+  const CHAPTERS = [[0, 'The forest'], [0.3, 'The slope'], [0.74, 'The crown']] as const
   const hudCount = $('.hero__hud-count b', root), hudName = $('.hero__hud-name', root)
   let chapter = 0
   const updateHud = (p: number) => {
@@ -300,11 +300,17 @@ export function homeSetup(root: HTMLElement) {
   }
 
   if (!reducedMotion) {
-    // about 4 screens of scrolling for the 13 s film: long pins made the page feel heavy to scroll
-    const FLY = 4.2, OVERLAP = 1
+    // about 5 screens of scrolling for the 13 s film: long pins made the page feel heavy to scroll
+    const FLY = 4.8, OVERLAP = 1
     const fly = { p: 0 }
-    // the closing crown shot is short, so it takes a longer stretch of the scroll: 30% for its 13% of the film
-    const filmAt = (p: number) => (p < 0.7 ? (p / 0.7) * 0.87 : 0.87 + ((p - 0.7) / 0.3) * 0.13)
+    // how much of the scroll each shot gets, as [scroll, film] marks: the forest moves briskly, the
+    // ski slope lingers, and the short closing crown shot is stretched so it isn't over at once
+    const PACE = [[0, 0], [0.3, 0.51], [0.74, 0.86], [1, 1]]
+    const filmAt = (p: number) => {
+      const k = p < PACE[1][0] ? 0 : p < PACE[2][0] ? 1 : 2
+      const [a, fa] = PACE[k], [b, fb] = PACE[k + 1]
+      return fa + ((p - a) / (b - a)) * (fb - fa)
+    }
     const heroTl = gsap.timeline({
       defaults: { ease: 'none' },
       scrollTrigger: {
@@ -322,8 +328,8 @@ export function homeSetup(root: HTMLElement) {
       .fromTo($$('.hero__hud-line > i', root), { scaleY: 0 }, { scaleY: 1, duration: FLY }, 0)
       .to($$('.hero__hud', root), { opacity: 0, duration: FLY * 0.04 }, FLY * 0.96)
       .to($$('.hero > .scroll-cue', root), { opacity: 0, duration: 0.2 }, 0)
-    // one caption per shot, timed to the film (shot changes at 41% and 69% of the scroll)
-    ;[[0.1, 0.33], [0.46, 0.62], [0.74, 0.95]].forEach(([a, b], i) => {
+    // one caption per shot, timed to the film (shot changes at 30% and 74% of the scroll)
+    ;[[0.09, 0.23], [0.36, 0.64], [0.78, 0.95]].forEach(([a, b], i) => {
       const cap = $$('.hero__caption', root)[i]
       if (!cap) return
       heroTl.fromTo(cap, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: FLY * 0.07 }, FLY * a)
