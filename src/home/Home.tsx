@@ -299,7 +299,7 @@ export default function Home() {
       {/* ============ CONTACT ============ */}
       <section className="contact" id="contact">
         <div className="contact__media">
-          <img loading="lazy" decoding="async" src="/assets/img/renders/facade-entrance.jpg" alt="" />
+          <img loading="lazy" decoding="async" src="/assets/img/renders/snow-aerial-sunset.jpg" alt="" />
         </div>
         <div className="contact__inner">
           <span className="eyebrow">Enquire now</span>

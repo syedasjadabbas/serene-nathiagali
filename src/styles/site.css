@@ -372,6 +372,9 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 
 /* ---------- payment plan ---------- */
 .payment { padding: clamp(100px, 14vw, 180px) var(--gutter); background: var(--ink); }
+/* same colour as the tower section above, so their two paddings would read as one big gap */
+.towers:has(+ .payment) { padding-bottom: 0; }
+.towers + .payment { padding-top: clamp(56px, 6vw, 96px); }
 .payment .eyebrow { color: rgba(255, 255, 255, .6); }
 .price {
   list-style: none; margin: 0 0 clamp(48px, 7vw, 90px); padding: 0;
@@ -413,10 +416,12 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .calc__out--roi div { background: rgba(127, 183, 156, .14); box-shadow: inset 0 0 0 1px rgba(127, 183, 156, .28); }
 .calc__note { margin: 18px 0 0; font-size: 12px; line-height: 1.6; color: rgba(255, 255, 255, .5); }
 .benefits > p { margin: 0 0 24px; font-size: 14px; line-height: 1.65; color: rgba(255, 255, 255, .72); }
-.benefits ol { list-style: none; counter-reset: b; margin: 0; padding: 0; }
+.benefits { display: flex; flex-direction: column; }
+/* the rows share out the box's height, which the calculator beside it sets */
+.benefits ol { flex: 1; display: grid; grid-auto-rows: 1fr; list-style: none; counter-reset: b; margin: 0; padding: 0; }
 .benefits li {
-  counter-increment: b; display: flex; gap: 18px; align-items: baseline;
-  padding: 14px 0; border-top: 1px solid rgba(255, 255, 255, .14); font-size: 16px;
+  counter-increment: b; display: flex; gap: 18px; align-items: center;
+  padding: 14px 0; border-top: 1px solid rgba(255, 255, 255, .14); font-size: clamp(16px, 1.65vw, 24px); letter-spacing: -.01em;
 }
 .benefits li::before { content: counter(b, decimal-leading-zero); font-size: 11px; color: var(--stone); letter-spacing: .1em; }
 
