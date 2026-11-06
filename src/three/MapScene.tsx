@@ -13,6 +13,7 @@ const DRIVE_SECONDS = 3.5
 function Pacer() {
   useFrame((_, dt) => {
     const step = Math.min(dt, 0.1) / DRIVE_SECONDS
+    mapState.drawn = true
     const d = mapState.progress - mapState.shown
     mapState.shown += Math.max(-step, Math.min(step, d))
   })

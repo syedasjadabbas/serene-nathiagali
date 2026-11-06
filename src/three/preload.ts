@@ -23,14 +23,14 @@ export function preload3D() {
   return started
 }
 
-// building a scene holds up the page for a moment, so never under a moving hand; a scene the
-// visitor is about to reach is built regardless (see LazyCanvas)
+// building a scene holds up the page for a moment, so wait for a pause in the scrolling, but not
+// for long: someone scrolling steadily must not reach a scene that was never built
 const scrollRest = () => new Promise<void>((resolve) => {
-  let y = window.scrollY, still = 0
+  let y = window.scrollY, still = 0, ticks = 0
   const id = setInterval(() => {
     still = window.scrollY === y ? still + 1 : 0
     y = window.scrollY
-    if (still >= 3) { clearInterval(id); resolve() }
+    if (still >= 3 || ++ticks >= 20) { clearInterval(id); resolve() }
   }, 150)
 })
 

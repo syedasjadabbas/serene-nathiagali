@@ -356,10 +356,10 @@ export function homeSetup(root: HTMLElement) {
     }, 400)
   })
   heroFramesReady.then(() => { if (alive) sizeCanvas() })
-    .then(() => Promise.race([filmBuffered, new Promise((r) => setTimeout(r, 12000))]))
+    .then(() => Promise.race([filmBuffered, new Promise((r) => setTimeout(r, 10000))]))
     .then(() => { if (alive) $$<HTMLImageElement>('.scene img', root).forEach((img) => { img.loading = 'eager' }) })
     .then(() => (coarsePointer ? pastTheFilm() : undefined))
-    .then(() => Promise.race([whenScrollRests(), new Promise((r) => setTimeout(r, 7000))]))
+    .then(() => Promise.race([whenScrollRests(), new Promise((r) => setTimeout(r, 2000))]))
     .then(() => { if (alive) void preload3D() })
   window.addEventListener('resize', sizeCanvas)
 

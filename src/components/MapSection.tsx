@@ -34,6 +34,26 @@ function MapSection3D() {
   const desc = useRef<HTMLParagraphElement>(null)
   const dots = useRef<HTMLOListElement>(null)
   const labelEls = useRef<(HTMLDivElement | null)[]>([])
+  const still = useRef<HTMLDivElement>(null)
+
+  // someone scrolling fast can arrive while the 3D map is still building: a satellite still stands
+  // in until it has drawn, fetched only if the visitor gets near and it's needed
+  useEffect(() => {
+    const el = section.current, img = still.current
+    if (!el || !img) return
+    mapState.drawn = false
+    const near = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && !mapState.drawn) img.style.backgroundImage = 'url(/assets/map/galyat-sat-2048.jpg)'
+    }, { rootMargin: '100% 0px' })
+    near.observe(el)
+    const id = setInterval(() => {
+      if (!mapState.drawn) return
+      img.classList.add('is-gone')
+      clearInterval(id)
+      near.disconnect()
+    }, 200)
+    return () => { clearInterval(id); near.disconnect() }
+  }, [])
 
   useEffect(() => {
     const el = section.current
@@ -109,6 +129,7 @@ function MapSection3D() {
       <div className="map-sticky">
         <LazyCanvas scene={MapScene} sceneProps={{ lite, onStop, labelEls }} warmup="2000px" premount
           canvas={{ dpr: [1, lite ? 1.25 : 1.75], camera: { fov: 38, near: 0.1, far: 400, position: [4, 78, 64] }, gl: { antialias: false, powerPreference: 'high-performance' } }} />
+        <div className="map-still" ref={still} aria-hidden="true" />
         <div className="map-shade" />
         <div className="map-labels" aria-hidden="true">
           {LABELLED.map((pl, i) => (

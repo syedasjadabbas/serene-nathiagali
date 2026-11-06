@@ -64,6 +64,8 @@
 /* ---------- 3D map ---------- */
 .map-section { height: 400vh; position: relative; background: #8a9ea8; }
 .map-sticky { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; background: #8a9ea8; }
+.map-still { position: absolute; inset: 0; pointer-events: none; background: #5c6b66 center / cover no-repeat; transition: opacity .8s ease; }
+.map-still.is-gone { opacity: 0; }
 .map-shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(8,12,14,.55), rgba(8,12,14,0) 24%), linear-gradient(90deg, rgba(8,12,14,.82), rgba(8,12,14,.35) 34%, rgba(8,12,14,0) 58%), linear-gradient(0deg, rgba(8,12,14,.8), rgba(8,12,14,0) 32%); }
 .map-hud { position: absolute; inset: 0; display: grid; grid-template-rows: auto 1fr auto; padding: 110px var(--gutter) max(28px, env(safe-area-inset-bottom, 0px)); pointer-events: none; }
 .map-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
