@@ -1,6 +1,6 @@
 import { Component, Suspense, lazy, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from 'react'
 import type { CanvasProps } from '@react-three/fiber'
-import { hasWebGL } from '../lib/device'
+import { coarsePointer, hasWebGL } from '../lib/device'
 import { whenPreloaded } from './preload'
 
 const CanvasHost = lazy(() => import('./CanvasHost'))
@@ -25,6 +25,8 @@ class SceneBoundary extends Component<{ fallback: ReactNode; children: ReactNode
  * preloaded in the background) or as it nears the screen, whichever comes first. It animates only
  * while visible and is fully stopped otherwise: on demand would not be enough, as auto-rotating
  * controls ask for a new frame every frame. Devices without WebGL get `fallback`.
+ * Building a scene costs a phone seconds of its main thread, so there it only happens as the
+ * visitor gets close, and never in the background.
  */
 export function LazyCanvas<P extends object>({ scene, sceneProps, canvas = {}, fallback = null, warmup = '200px', premount = false }: {
   scene: ComponentType<P>
@@ -45,15 +47,15 @@ export function LazyCanvas<P extends object>({ scene, sceneProps, canvas = {}, f
     const io = new IntersectionObserver(([e]) => {
       setVisible(e.isIntersecting)
       if (e.isIntersecting) setMounted(true)
-    }, { rootMargin: warmup })
+    }, { rootMargin: coarsePointer ? '600px' : warmup })
     // build well ahead of the screen, so a fast scroll never reaches an empty canvas
     const ahead = new IntersectionObserver(([e]) => { if (e.isIntersecting) void pageSettled.then(() => setMounted(true)) }, { rootMargin: '150% 0px' })
     io.observe(el)
-    ahead.observe(el)
+    if (!coarsePointer) ahead.observe(el)
     return () => { io.disconnect(); ahead.disconnect() }
   }, [warmup, supported])
   useEffect(() => {
-    if (!supported || !premount) return
+    if (!supported || !premount || coarsePointer) return
     let live = true
     whenPreloaded().then(() => { if (live) setMounted(true) })
     return () => { live = false }

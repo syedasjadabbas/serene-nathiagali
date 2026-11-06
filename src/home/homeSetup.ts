@@ -2,6 +2,7 @@ import { gsap, ScrollTrigger, lenis, jumpTo, reducedMotion } from '../lib/scroll
 import { openFilm, type HeroFilm } from './heroVideo'
 import { revealPage } from '../lib/router'
 import { preload3D } from '../three/preload'
+import { coarsePointer } from '../lib/device'
 
 // Homepage: loader → push through the logo → scroll-driven hero fly-over (canvas frame sequence) → pinned tour.
 // Runs inside the page's GSAP context; returns a cleanup for non-GSAP resources.
@@ -304,9 +305,17 @@ export function homeSetup(root: HTMLElement) {
       if (still >= 3 || !alive) { clearInterval(id); resolve() }
     }, 150)
   })
+  // starting the 3D engine holds a phone up for seconds: never during the film, which would stutter
+  const pastTheFilm = () => new Promise<void>((resolve) => {
+    const tour = $('.tour', root)
+    const id = setInterval(() => {
+      if (!alive || !tour || tour.getBoundingClientRect().top < window.innerHeight) { clearInterval(id); resolve() }
+    }, 400)
+  })
   heroFramesReady.then(() => { if (alive) sizeCanvas() })
     .then(() => Promise.race([filmBuffered, new Promise((r) => setTimeout(r, 12000))]))
     .then(() => { if (alive) $$<HTMLImageElement>('.scene img', root).forEach((img) => { img.loading = 'eager' }) })
+    .then(() => (coarsePointer ? pastTheFilm() : undefined))
     .then(() => Promise.race([whenScrollRests(), new Promise((r) => setTimeout(r, 7000))]))
     .then(() => { if (alive) void preload3D() })
   window.addEventListener('resize', sizeCanvas)
