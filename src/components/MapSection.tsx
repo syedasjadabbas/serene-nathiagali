@@ -71,10 +71,12 @@ function MapSection3D() {
     }
     const st = ScrollTrigger.create({
       trigger: el, start: 'top top', end: 'bottom bottom',
+      // measured after every pin above it, whatever order the triggers were made in
+      refreshPriority: -1,
       onUpdate: (self) => {
         mapState.progress = self.progress
         if (self.progress < 0.6) hold.armed = true
-        if (!reducedMotion && hold.armed && !hold.active && self.direction > 0 && self.progress >= HOLD_AT) startHold(self)
+        if (!reducedMotion && hold.armed && !hold.active && self.direction > 0 && self.progress >= HOLD_AT && el.getBoundingClientRect().top <= 1) startHold(self)
       },
     })
     const onMove = (e: PointerEvent) => {

@@ -266,7 +266,12 @@ export function homeSetup(root: HTMLElement) {
       noSharp()
       if (alive) void loadFrames()
     }
+    // on a big screen the 720p film only covers what's around the scroll position and the 1080p film
+    // hasn't reached yet, so the connection goes to the 1080p film
+    let baseFollows = frameSet === 'hd' && !slowLink
     const openBase = (name: string) => openFilm(`/assets/film2/${name}`, {
+      wantGroup: (g, at) => !baseFollows || (g >= at - 2 && g <= at + 9 && !sharpFilm?.hasGroup(g)),
+      onGroup: () => sharpFilm?.seek(Math.floor(wanted), direction),
       range: () => windowAt(Math.floor(wanted)),
       needed: (i) => alive && inWindow(i, Math.floor(wanted)) && !bitmaps.has(i) && !sharp.has(i),
       onFrame: (i, bm) => {
@@ -283,10 +288,11 @@ export function homeSetup(root: HTMLElement) {
     film.seek(0, 1)
     await Promise.race([film.measured, film.ready])
     // the browser's own speed estimate means little on a first visit, so judge by the film itself:
-    // under about 5 Mbps (which measures low here, as the page is still loading alongside it) the
+    // under about 4 Mbps (which measures low here, as the page is still loading alongside it) the
     // 720p film can't keep up with a scroll, so swap it for the small one
-    const crawling = big && film.speed() < 420_000
+    const crawling = big && film.speed() < 280_000
     if (crawling) {
+      baseFollows = false
       const lo = await openBase('lo')
       if (lo) {
         film.close()
@@ -300,6 +306,11 @@ export function homeSetup(root: HTMLElement) {
     // the sharp tier starts with the first picture: its opening shares the line with the base film,
     // then it waits for that to finish, so every position has a picture as soon as possible
     const openSharp = () => openFilm(`/assets/film2/${frameSet}`, {
+      // a soft picture beats a stuck one: the next few groups come first, from whichever film
+      wantGroup: (_, at) => {
+        const shown = (g: number) => g * small.gop >= FRAME_COUNT || small.hasGroup(g) || !!sharpFilm?.hasGroup(g)
+        return !baseFollows || [0, 1, 2, 3].every((k) => shown(at + k))
+      },
       range: () => windowAt(Math.floor(wanted)),
       needed: (i) => alive && inWindow(i, Math.floor(wanted)) && !sharp.has(i),
       onFrame: (i, bm) => {
@@ -307,16 +318,20 @@ export function homeSetup(root: HTMLElement) {
         sharp.set(i, bm)
         if (Math.abs(i - wanted) < 2.5) requestDraw(wanted)
       },
-      onFail: () => { sharpFilm?.close(); sharpFilm = null; noSharp() }, // the base film carries on
-      holdUntil: small.complete,
+      onFail: () => { // the base film carries on, for the whole film now
+        sharpFilm?.close(); sharpFilm = null; noSharp()
+        baseFollows = false
+        film?.seek(Math.floor(wanted), direction)
+      },
+      holdUntil: baseFollows ? small.head : small.complete,
     })
     void (crawling ? small.complete.then(openSharp) : openSharp()).then((f) => {
-      if (!f) { noSharp(); return }
+      if (!f) { noSharp(); baseFollows = false; small.seek(Math.floor(wanted), direction); return }
       if (!alive) { f.close(); return }
       sharpFilm = f
       f.seek(Math.floor(wanted), direction)
       void f.ready.then(sharpShown, sharpShown)
-      void Promise.all([small.complete, f.head]).then(buffered)
+      void Promise.all([baseFollows ? f.complete : small.complete, f.head]).then(buffered)
     }).catch(noSharp)
     return true
   }

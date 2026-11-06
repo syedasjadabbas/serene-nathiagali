@@ -18,6 +18,8 @@ export type HeroFilm = {
   /** Fetch and decode whatever this scroll position needs. */
   seek: (center: number, direction: number) => void
   received: () => number
+  /** Whether a keyframe group has downloaded. */
+  hasGroup: (group: number) => boolean
   /** Resolves once the first groups fetched together are in, for `speed` to mean something. */
   measured: Promise<void>
   /** Download speed so far, in bytes a second. */
@@ -33,6 +35,10 @@ type Hooks = {
   onFail: () => void
   /** After its opening groups, this film holds back until this resolves, leaving the line free. */
   holdUntil?: Promise<unknown>
+  /** Leave a group out for now; asked again whenever the scroll moves. */
+  wantGroup?: (group: number, centerGroup: number) => boolean
+  /** A group has arrived. */
+  onGroup?: () => void
 }
 
 const FRAME_US = 33333 // timestamps only identify frames; playback timing comes from the scroll
@@ -129,7 +135,7 @@ export async function openFilm(base: string, hooks: Hooks): Promise<HeroFilm | n
     const from = Math.floor(center / meta.gop)
     for (let d = 0; d < groups; d++) {
       for (const g of [from + d * direction, from - d * direction]) {
-        if (g >= 0 && g < groups && !loaded[g] && !fetching.has(g)) return g
+        if (g >= 0 && g < groups && !loaded[g] && !fetching.has(g) && (hooks.wantGroup?.(g, from) ?? true)) return g
       }
     }
     return -1
@@ -167,6 +173,7 @@ export async function openFilm(base: string, hooks: Hooks): Promise<HeroFilm | n
           if (loaded.every(Boolean)) allIn()
           void pump()
           fill()
+          hooks.onGroup?.()
         })
         .catch(fail)
     }
@@ -181,6 +188,7 @@ export async function openFilm(base: string, hooks: Hooks): Promise<HeroFilm | n
     head,
     seek: (c, d) => { center = c; direction = d; fill(); void pump() },
     received: () => loaded.filter(Boolean).length * meta.gop,
+    hasGroup: (g) => !!loaded[g],
     measured,
     speed: () => bytesIn / Math.max(0.05, (lastIn - began) / 1000),
     close: () => {

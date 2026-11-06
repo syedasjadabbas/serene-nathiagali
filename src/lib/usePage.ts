@@ -42,6 +42,8 @@ export function usePage(root: RefObject<HTMLElement | null>, title: string, setu
       headerEffects(el)
       initScrollEffects(el)
     }, el)
+    // child components may have made their triggers first: put everything back in page order
+    ScrollTrigger.sort()
     const offMagnetic = magnetic(el)
     if (options.reveal !== false) revealPage()
     // images and fonts change the layout as they arrive
