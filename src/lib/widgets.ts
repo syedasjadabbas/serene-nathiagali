@@ -148,9 +148,19 @@ function progress(root: ParentNode): Cleanup | void {
 }
 
 /* ---------- enquiry form (no backend: hands the message to WhatsApp or email) ---------- */
+let prefill: { interest: string; message: string } | null = null
+
+/** Fills the enquiry form the next time it opens, e.g. with the unit picked in the calculator. */
+export function prefillEnquiry(interest: string, message: string) { prefill = { interest, message } }
+
 function enquiryForm(root: ParentNode): Cleanup | void {
   const form = $<HTMLFormElement>('#enquiryForm', root)
   if (!form) return
+  if (prefill) {
+    ;(form.elements.namedItem('interest') as HTMLSelectElement).value = prefill.interest
+    ;(form.elements.namedItem('message') as HTMLTextAreaElement).value = prefill.message
+    prefill = null
+  }
   const onSubmit = (e: SubmitEvent) => {
     e.preventDefault()
     if (!form.reportValidity()) return

@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Link } from '../lib/router'
+import { prefillEnquiry } from '../lib/widgets'
 
 // The published payment plans, figures exactly as issued by the sales team.
 const PLANS = [
@@ -11,13 +13,30 @@ const PLANS = [
 // Projected yearly return on the total amount, as given by the client.
 const ROI = 0.12
 
-const pkr = (n: number) => `PKR ${n.toLocaleString('en-US')}`
+const pkr = (n: number) => `PKR ${Math.round(n).toLocaleString('en-US')}`
+
+/** Amounts as people here say them: PKR 2.67 crore, PKR 6.75 lakh. Under a lakh stays exact. */
+const short = (n: number) => {
+  const two = (x: number) => String(Number(x.toFixed(2)))
+  if (n >= 1e7) return `PKR ${two(n / 1e7)} crore`
+  if (n >= 1e5) return `PKR ${two(n / 1e5)} lakh`
+  return pkr(n)
+}
+
+/** A published amount: the spoken form, with the exact figure under it. */
+const Amount = ({ n }: { n: number }) => (
+  <dd>{short(n)}{n >= 1e5 && <small>{pkr(n)}</small>}</dd>
+)
 
 /** Pick a plan to see its published price, down payment, installments and projected return. */
 export function PaymentCalc() {
   const [picked, setPicked] = useState(0)
   const plan = PLANS[picked]
   const yearly = plan.total * ROI
+  const enquire = () => prefillEnquiry(
+    plan.kind === '1 BHK' ? 'Hotel apartment' : plan.kind,
+    `I would like the figures for the ${plan.area} sq ft ${plan.kind}.`,
+  )
   return (
     <div className="calc">
       <h3>Estimate your payments</h3>
@@ -31,16 +50,20 @@ export function PaymentCalc() {
       </div>
       <dl className="calc__out">
         <div><dt>Rate per sq ft</dt><dd>{pkr(plan.rate)}</dd></div>
-        <div><dt>Total amount</dt><dd>{pkr(plan.total)}</dd></div>
-        <div><dt>Down payment (30%)</dt><dd>{pkr(plan.down)}</dd></div>
-        <div><dt>Monthly × 36</dt><dd>{pkr(plan.monthly)}</dd></div>
+        <div><dt>Total amount</dt><Amount n={plan.total} /></div>
+        <div><dt>Down payment (30%)</dt><Amount n={plan.down} /></div>
+        <div><dt>Monthly × 36</dt><Amount n={plan.monthly} /></div>
       </dl>
       <h4 className="calc__sub">ROI calculator</h4>
       <dl className="calc__out calc__out--roi">
-        <div><dt>Yearly return ({ROI * 100}%)</dt><dd>{pkr(yearly)}</dd></div>
-        <div><dt>Monthly return ({ROI * 100 / 12}%)</dt><dd>{pkr(yearly / 12)}</dd></div>
+        <div><dt>Yearly return ({ROI * 100}%)</dt><dd>{short(yearly)}</dd></div>
+        <div><dt>Monthly return ({ROI * 100 / 12}%)</dt><dd>{short(yearly / 12)}</dd></div>
+        <div><dt>Return over 5 years</dt><dd>{short(yearly * 5)}</dd></div>
+        <div><dt>Return over 10 years</dt><dd>{short(yearly * 10)}</dd></div>
+        <div><dt>Years to pay back</dt><dd>{(1 / ROI).toFixed(1)} years</dd></div>
       </dl>
-      <p className="calc__note">Returns are projected on the total amount and are not guaranteed. Final pricing and schedule are confirmed by the sales team.</p>
+      <Link className="btn btn--sm calc__cta" to="/contact" onClick={enquire}>Get the figures for this unit <span className="btn__dot">→</span></Link>
+      <p className="calc__note">Returns are projected on the total amount at {ROI * 100}% every year and are not guaranteed. Final pricing and schedule are confirmed by the sales team.</p>
     </div>
   )
 }
