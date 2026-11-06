@@ -13,9 +13,15 @@ export type HeroFilm = {
   ready: Promise<void>
   /** Resolves once the whole film has downloaded. */
   complete: Promise<void>
+  /** Resolves once the first few groups are in: enough for the opening of a scroll. */
+  head: Promise<void>
   /** Fetch and decode whatever this scroll position needs. */
   seek: (center: number, direction: number) => void
   received: () => number
+  /** Resolves once the first groups fetched together are in, for `speed` to mean something. */
+  measured: Promise<void>
+  /** Download speed so far, in bytes a second. */
+  speed: () => number
   close: () => void
 }
 
@@ -25,11 +31,14 @@ type Hooks = {
   needed: (i: number) => boolean
   onFrame: (i: number, frame: ImageBitmap) => void
   onFail: () => void
+  /** After its opening groups, this film holds back until this resolves, leaving the line free. */
+  holdUntil?: Promise<unknown>
 }
 
 const FRAME_US = 33333 // timestamps only identify frames; playback timing comes from the scroll
 const IN_FLIGHT = 4
 const FETCHES = 2 // groups downloading at once
+const HEAD = 3 // groups that make up the opening
 
 export async function openFilm(base: string, hooks: Hooks): Promise<HeroFilm | null> {
   if (!('VideoDecoder' in window)) return null
@@ -48,6 +57,11 @@ export async function openFilm(base: string, hooks: Hooks): Promise<HeroFilm | n
   const fed = new Set<number>() // sent to the decoder, bitmap not back yet
   let firstFrame = () => {}, giveUp = (_: Error) => {}, allIn = () => {}
   const complete = new Promise<void>((resolve) => { allIn = resolve })
+  let headIn = () => {}
+  const head = new Promise<void>((resolve) => { headIn = resolve })
+  let measuredIn = () => {}
+  const measured = new Promise<void>((resolve) => { measuredIn = resolve })
+  const aborter = new AbortController()
   const ready = new Promise<void>((resolve, reject) => {
     firstFrame = resolve
     giveUp = reject
@@ -109,7 +123,9 @@ export async function openFilm(base: string, hooks: Hooks): Promise<HeroFilm | n
   }
 
   const lastOf = (g: number) => Math.min(count, (g + 1) * meta.gop) - 1
+  let held = !!hooks.holdUntil
   const nextToFetch = () => {
+    if (held && loaded.filter(Boolean).length + fetching.size >= HEAD) return -1
     const from = Math.floor(center / meta.gop)
     for (let d = 0; d < groups; d++) {
       for (const g of [from + d * direction, from - d * direction]) {
@@ -120,10 +136,12 @@ export async function openFilm(base: string, hooks: Hooks): Promise<HeroFilm | n
   }
   const fetchGroup = async (g: number) => {
     const from = offsets[g * meta.gop], to = offsets[lastOf(g) + 1]
-    const res = await fetch(`${base}.h264`, { headers: { Range: `bytes=${from}-${to - 1}` } })
+    const res = await fetch(`${base}.h264`, { headers: { Range: `bytes=${from}-${to - 1}` }, priority: 'high', signal: aborter.signal })
     if (!res.ok) throw new Error('film unavailable')
     const bytes = new Uint8Array(await res.arrayBuffer())
     if (closed) return
+    bytesIn += bytes.length
+    lastIn = performance.now()
     if (res.status === 206) {
       data.set(bytes, from)
       loaded[g] = true
@@ -133,14 +151,19 @@ export async function openFilm(base: string, hooks: Hooks): Promise<HeroFilm | n
       loaded.fill(true)
     }
   }
+  const began = performance.now()
+  let bytesIn = 0, lastIn = began
   const fill = () => {
-    while (fetching.size < FETCHES && !closed && !failed) {
+    // held back, groups come one at a time, so the very first arrives soonest
+    while (fetching.size < (held ? 1 : FETCHES) && !closed && !failed) {
       const g = nextToFetch()
       if (g < 0) return
       fetching.add(g)
       fetchGroup(g)
         .then(() => {
           fetching.delete(g)
+          if (loaded.filter(Boolean).length >= Math.min(FETCHES, groups)) measuredIn()
+          if (loaded.filter(Boolean).length >= Math.min(HEAD, groups)) headIn()
           if (loaded.every(Boolean)) allIn()
           void pump()
           fill()
@@ -149,15 +172,20 @@ export async function openFilm(base: string, hooks: Hooks): Promise<HeroFilm | n
     }
   }
   fill()
+  void hooks.holdUntil?.finally(() => { held = false; fill() })
 
   return {
     gop: meta.gop,
     ready,
     complete,
+    head,
     seek: (c, d) => { center = c; direction = d; fill(); void pump() },
     received: () => loaded.filter(Boolean).length * meta.gop,
+    measured,
+    speed: () => bytesIn / Math.max(0.05, (lastIn - began) / 1000),
     close: () => {
       closed = true
+      aborter.abort()
       if (decoder.state !== 'closed') decoder.close()
     },
   }

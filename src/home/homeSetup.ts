@@ -11,16 +11,6 @@ let loaderPlayed = false // the loader plays once per visit; coming back to Home
 const $ = <T extends Element = HTMLElement>(sel: string, root: ParentNode) => root.querySelector<T>(sel)
 const $$ = <T extends Element = HTMLElement>(sel: string, root: ParentNode) => [...root.querySelectorAll<T>(sel)]
 
-function waitForImages(imgs: (HTMLImageElement | null)[], onProgress: (p: number) => void) {
-  const list = imgs.filter(Boolean) as HTMLImageElement[]
-  let done = 0
-  return Promise.all(list.map((img) => new Promise<void>((resolve) => {
-    const finish = () => { done++; onProgress(done / list.length); resolve() }
-    if (img.complete) finish()
-    else { img.addEventListener('load', finish, { once: true }); img.addEventListener('error', finish, { once: true }) }
-  })))
-}
-
 // 1x1 AVIF probe: resolves true when the browser can decode AVIF
 function supportsAvif() {
   return new Promise<boolean>((resolve) => {
@@ -56,12 +46,17 @@ export function homeSetup(root: HTMLElement) {
   // The hero film: three drone shots from the project's 3D animation (forest approach,
   // ski-slope glide, rooftop crown), cut with dissolves from the 1080p masters, colour graded,
   // lightly denoised over time so the foliage doesn't shimmer. It plays as hardware-decoded video
-  // in two tiers (see heroVideo.ts): a 2.7 MB version of the whole film comes first, so every
-  // scroll position has a picture even on a slow connection, then sharp frames (1080p on big
-  // screens, 720p otherwise) replace it as they arrive. Browsers that can't use image frames.
+  // in two tiers (see heroVideo.ts): a base film gives every scroll position a picture, and sharp
+  // frames replace it as they arrive. Big screens get 720p under 1080p, so a first visit is never
+  // soft; other screens and slow connections get a 2.7 MB film under 720p, so the picture keeps up
+  // with the scroll. The sharp opening comes first. Browsers that can't use image frames.
   // pick by the pixels the cover-fit needs (portrait phones crop the middle of a wide frame)
   const neededWidth = Math.max(window.innerWidth, window.innerHeight * 16 / 9) * Math.min(window.devicePixelRatio || 1, 2)
-  const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData
+  const link = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string; downlink?: number } }).connection
+  const saveData = link?.saveData
+  // only what is known to be slow: with nothing measured yet, as on a first visit, Chrome reports a
+  // stock 1.6 Mbps, which must not count
+  const slowLink = /2g|3g/.test(link?.effectiveType ?? '') || ((link?.downlink ?? 0) > 0 && link!.downlink! < 1.5)
   const frameSet = saveData || neededWidth < 900 ? 'sm' : neededWidth < 1500 || window.matchMedia('(pointer: coarse)').matches ? 'lg' : 'hd'
   const FRAME_W = { sm: 854, lg: 1280, hd: 1920 }[frameSet]
   const FRAME_COUNT = frameSet === 'sm' ? 193 : 386
@@ -176,7 +171,7 @@ export function homeSetup(root: HTMLElement) {
     }
   }
   // dev only: lets the test harness read what the hero is drawing
-  if (import.meta.env.DEV) (window as unknown as { __hero: unknown }).__hero = { get wanted() { return wanted }, get drawn() { return drawnKey }, get decoded() { return bitmaps.size }, get loaded() { return film ? film.received() : blobs.filter(Boolean).length }, get video() { return !!film } }
+  if (import.meta.env.DEV || import.meta.env.VITE_PROBE) (window as unknown as { __hero: unknown }).__hero = { get wanted() { return wanted }, get drawn() { return drawnKey }, get decoded() { return bitmaps.size }, get loaded() { return film ? film.received() : blobs.filter(Boolean).length }, get video() { return !!film } }
   const requestDraw = (f: number) => {
     const clamped = Math.max(0, Math.min(FRAME_COUNT - 1, f))
     if (Math.floor(clamped) !== Math.floor(wanted)) {
@@ -227,15 +222,22 @@ export function homeSetup(root: HTMLElement) {
   let framesLoading: Promise<void> | null = null
   const loadFrames = () => (framesLoading ??= avifReady.then(() => fetchAll(loadOrder.slice(0, COARSE), 6)).then(() => { if (alive) fetchRest(4) }))
   // video where the browser can play it, image frames otherwise (or if the decoder gives up)
+  // the loader waits for the first sharp frame, so a first visit doesn't open on the soft film
+  let sharpShown = () => {}, buffered = () => {}
+  const firstSharp = new Promise<void>((resolve) => { sharpShown = resolve })
+  // nothing else may share the connection until the film has its opening
+  const filmBuffered = new Promise<void>((resolve) => { buffered = resolve })
+  const noSharp = () => { sharpShown(); buffered() }
   const startFilm = async () => {
     if (frameSet === 'sm') return false
     let opened: HeroFilm | null = null
     const fallBack = () => {
       film = null
       opened?.close()
+      noSharp()
       if (alive) void loadFrames()
     }
-    opened = await openFilm('/assets/film2/lo', {
+    const openBase = (name: string) => openFilm(`/assets/film2/${name}`, {
       range: () => windowAt(Math.floor(wanted)),
       needed: (i) => alive && inWindow(i, Math.floor(wanted)) && !bitmaps.has(i) && !sharp.has(i),
       onFrame: (i, bm) => {
@@ -245,11 +247,30 @@ export function homeSetup(root: HTMLElement) {
       },
       onFail: fallBack,
     })
+    const big = frameSet === 'hd' && !slowLink
+    opened = await openBase(big ? 'lg' : 'lo')
     if (!opened) return false
     film = opened
     film.seek(0, 1)
-    // once every position has a picture, the sharp tier streams in behind it
-    void film.complete.then(() => (alive ? openFilm(`/assets/film2/${frameSet}`, {
+    await Promise.race([film.measured, film.ready])
+    // the browser's own speed estimate means little on a first visit, so judge by the film itself:
+    // under about 5 Mbps (which measures low here, as the page is still loading alongside it) the
+    // 720p film can't keep up with a scroll, so swap it for the small one
+    const crawling = big && film.speed() < 420_000
+    if (crawling) {
+      const lo = await openBase('lo')
+      if (lo) {
+        film.close()
+        film = opened = lo
+        film.seek(Math.floor(wanted), direction)
+      }
+      sharpShown() // no time to wait for sharp frames on a line like this
+    }
+    await film.ready
+    const small = film
+    // the sharp tier starts with the first picture: its opening shares the line with the base film,
+    // then it waits for that to finish, so every position has a picture as soon as possible
+    const openSharp = () => openFilm(`/assets/film2/${frameSet}`, {
       range: () => windowAt(Math.floor(wanted)),
       needed: (i) => alive && inWindow(i, Math.floor(wanted)) && !sharp.has(i),
       onFrame: (i, bm) => {
@@ -257,17 +278,21 @@ export function homeSetup(root: HTMLElement) {
         sharp.set(i, bm)
         if (Math.abs(i - wanted) < 2.5) requestDraw(wanted)
       },
-      onFail: () => { sharpFilm?.close(); sharpFilm = null }, // the small film carries on
-    }) : null)).then((f) => {
-      if (!f) return
+      onFail: () => { sharpFilm?.close(); sharpFilm = null; noSharp() }, // the base film carries on
+      holdUntil: small.complete,
+    })
+    void (crawling ? small.complete.then(openSharp) : openSharp()).then((f) => {
+      if (!f) { noSharp(); return }
+      if (!alive) { f.close(); return }
       sharpFilm = f
       f.seek(Math.floor(wanted), direction)
-    }).catch(() => {})
-    await film.ready
+      void f.ready.then(sharpShown, sharpShown)
+      void Promise.all([small.complete, f.head]).then(buffered)
+    }).catch(noSharp)
     return true
   }
   const heroFramesReady = startFilm().catch(() => { film?.close(); film = null; return false })
-    .then((playing) => (playing ? undefined : loadFrames()))
+    .then((playing) => { if (playing) return; noSharp(); return loadFrames() })
   // Starting the 3D scenes costs a moment of main-thread time: wait for a pause in the scrolling, so
   // it never lands under a moving hand, but not too long: left to the last moment they would
   // download and build just as the visitor reaches them.
@@ -280,6 +305,8 @@ export function homeSetup(root: HTMLElement) {
     }, 150)
   })
   heroFramesReady.then(() => { if (alive) sizeCanvas() })
+    .then(() => Promise.race([filmBuffered, new Promise((r) => setTimeout(r, 12000))]))
+    .then(() => { if (alive) $$<HTMLImageElement>('.scene img', root).forEach((img) => { img.loading = 'eager' }) })
     .then(() => Promise.race([whenScrollRests(), new Promise((r) => setTimeout(r, 7000))]))
     .then(() => { if (alive) void preload3D() })
   window.addEventListener('resize', sizeCanvas)
@@ -414,7 +441,7 @@ export function homeSetup(root: HTMLElement) {
     const state = { shown: 0 }
     let readyDone = false
     const ready = Promise.race([
-      Promise.all([waitForImages([$<HTMLImageElement>('.scene img', root)], () => {}), heroFramesReady]),
+      Promise.all([heroFramesReady, firstSharp]),
       new Promise((resolve) => setTimeout(resolve, 4000)), // never wait more than 4s
     ]).then(() => { readyDone = true })
     const render = () => {

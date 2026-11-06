@@ -91,10 +91,10 @@ export default function Home() {
       {/* ============ PINNED TOUR ============ */}
       <section className="tour" id="tour">
         <div className="tour__stage">
-          <div className="scene"><img src="/assets/img/renders/tower-forest-mist.jpg" alt="Serene Heights tower rising above the pine forest and mist" /></div>
-          <div className="scene"><img fetchPriority="low" decoding="async" src="/assets/img/renders/tower-closeup.jpg" alt="Upper floors and balconies of the Serene Heights apartments" /></div>
-          <div className="scene"><img fetchPriority="low" decoding="async" src="/assets/img/renders/rooftop-dining.jpg" alt="Rooftop restaurant with glass walls above the clouds" /></div>
-          <div className="scene"><img fetchPriority="low" decoding="async" src="/assets/img/renders/tower-sky.jpg" alt="Serene Heights tower against the open sky" /></div>
+          <div className="scene"><img loading="lazy" decoding="async" src="/assets/img/renders/tower-forest-mist.jpg" alt="Serene Heights tower rising above the pine forest and mist" /></div>
+          <div className="scene"><img loading="lazy" decoding="async" src="/assets/img/renders/tower-closeup.jpg" alt="Upper floors and balconies of the Serene Heights apartments" /></div>
+          <div className="scene"><img loading="lazy" decoding="async" src="/assets/img/renders/rooftop-dining.jpg" alt="Rooftop restaurant with glass walls above the clouds" /></div>
+          <div className="scene"><img loading="lazy" decoding="async" src="/assets/img/renders/tower-sky.jpg" alt="Serene Heights tower against the open sky" /></div>
           <div className="tour__shade"></div>
 
           <div className="tour__progress"><span></span></div>
