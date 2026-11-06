@@ -10,7 +10,7 @@ export default function PaymentPlan() {
     <div ref={root}>
       {/* ============ PAGE HERO ============ */}
       <section className="page-hero">
-        <div className="page-hero__media"><img fetchPriority="high" src="/assets/img/renders/facade-entrance.jpg" alt="" /></div>
+        <div className="page-hero__media"><img fetchPriority="high" srcSet="/assets/img/renders/facade-entrance-m.webp 1280w, /assets/img/renders/facade-entrance.webp 2048w" sizes="100vw" src="/assets/img/renders/facade-entrance.jpg" alt="" /></div>
         <div className="page-hero__content">
           <nav className="crumbs reveal-up" aria-label="Breadcrumb"><Link to="/">Home</Link><span>/</span><span>Payment Plan</span></nav>
           <h1 className="split">Own it in<br />36 months</h1>
@@ -19,6 +19,7 @@ export default function PaymentPlan() {
       </section>
 
       <section className="payment" id="payment-plan">
+        <h2 className="vh">Prices and payment calculator</h2>
         <ul className="price">
           <li><span>Base price</span><strong><small>PKR</small>40,000</strong><em>per sq ft</em></li>
           <li><span>Booking</span><strong><small>from</small>30%</strong><em>of total price</em></li>
@@ -88,7 +89,7 @@ export default function PaymentPlan() {
 
       {/* ============ ENQUIRE ============ */}
       <section className="contact" id="enquire">
-        <div className="contact__media"><img loading="lazy" decoding="async" src="/assets/img/renders/night-facade.jpg" alt="" /></div>
+        <div className="contact__media"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/night-facade-m.webp 720w" sizes="100vw" src="/assets/img/renders/night-facade.jpg" alt="" /></div>
         <div className="contact__inner">
           <span className="eyebrow">Enquire now</span>
           <h2 className="contact__title split">Start with<br />30% booking</h2>

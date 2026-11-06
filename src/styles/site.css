@@ -175,6 +175,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .menu li:nth-child(n+6) a { transition-delay: .25s; }
 .menu a:hover { color: var(--stone); }
 .menu__foot { margin: auto 0 0; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--stone); }
+.menu__foot a { font: inherit; letter-spacing: inherit; overflow-wrap: anywhere; }
 
 /* ---------- hero ---------- */
 .hero { position: relative; height: 100vh; height: 100svh; min-height: 560px; overflow: hidden; }
@@ -698,6 +699,18 @@ a.info-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(5,
   .hero__caption strong { white-space: normal; font-size: clamp(30px, 9.2vw, 42px); line-height: 1.05; text-wrap: balance; }
   .hero__caption span { font-size: 11px; letter-spacing: .16em; }
   .tiles figcaption { left: 12px; right: 12px; bottom: 12px; gap: 6px; font-size: 16px; line-height: 1.05; }
-  .tiles figcaption span { font-size: 9px; letter-spacing: .12em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tiles figcaption span { font-size: 11px; letter-spacing: .06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tiles .tile::after { background: linear-gradient(to top, rgba(8,10,14,.88), rgba(8,10,14,0) 62%); }
+}
+
+/* for screen readers only */
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* touch screens: targets a finger can hit */
+@media (pointer: coarse) {
+  .pill { min-height: 44px; }
+  .logo { min-height: 44px; display: inline-flex; align-items: center; }
+  .menu li a, .menu__foot a { display: inline-block; padding-block: 6px; }
+  .socials a, .footer > a { display: inline-block; padding-block: 12px; }
+  .crumbs a, .link-more { padding-block: 10px; }
 }

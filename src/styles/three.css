@@ -54,7 +54,7 @@
 }
 @media (max-width: 600px) {
   .hscroll__card figcaption { left: 12px; right: 12px; bottom: 12px; gap: 6px; font-size: 16px; line-height: 1.05; }
-  .hscroll__card figcaption span { font-size: 9px; letter-spacing: .12em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hscroll__card figcaption span { font-size: 11px; letter-spacing: .06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .hscroll__card::after { background: linear-gradient(to top, rgba(8,10,14,.88), rgba(8,10,14,0) 62%); }
 }
 
@@ -131,7 +131,7 @@
 /* small phones: the four options share the width on one line */
 @media (max-width: 420px) {
   .seg { display: flex; width: auto; flex-wrap: nowrap; }
-  .seg button { flex: 1; text-align: center; white-space: nowrap; padding: 9px 6px; letter-spacing: .06em; font-size: 10.5px; }
+  .seg button { flex: 1; text-align: center; white-space: nowrap; padding: 13px 6px; letter-spacing: .06em; font-size: 11px; }
 }
 .panel-empty { display: grid; gap: 14px; }
 .panel-empty h3, .floor-view h3 { margin: 0; font-size: clamp(22px, 2vw, 30px); font-weight: 300; letter-spacing: -.02em; }
@@ -190,3 +190,5 @@
 .plan3d__hint { padding: 9px 14px; border-radius: 999px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; background: rgba(12, 28, 22, .78); }
 .plan3d__tools { display: flex; gap: 8px; }
 .plan3d__note { position: absolute; z-index: 2; left: 0; right: 0; bottom: 8px; margin: 0; text-align: center; font-size: 11px; color: rgba(255, 255, 255, .6); pointer-events: none; }
+
+@media (pointer: coarse) { .map-note, .map-credit { font-size: 11px; } }

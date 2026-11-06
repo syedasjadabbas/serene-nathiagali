@@ -9,7 +9,7 @@ export default function Amenities() {
     <div ref={root}>
       {/* ============ PAGE HERO ============ */}
       <section className="page-hero">
-        <div className="page-hero__media"><img fetchPriority="high" src="/assets/img/renders/rooftop-dining.jpg" alt="" /></div>
+        <div className="page-hero__media"><img fetchPriority="high" srcSet="/assets/img/renders/rooftop-dining-m.webp 1280w, /assets/img/renders/rooftop-dining.webp 2048w" sizes="100vw" src="/assets/img/renders/rooftop-dining.jpg" alt="" /></div>
         <div className="page-hero__content">
           <nav className="crumbs reveal-up" aria-label="Breadcrumb"><Link to="/">Home</Link><span>/</span><span>Amenities</span></nav>
           <h1 className="split">Every desire<br />on your doorstep</h1>
@@ -211,7 +211,7 @@ export default function Amenities() {
 
       {/* ============ ENQUIRE ============ */}
       <section className="contact" id="enquire">
-        <div className="contact__media"><img loading="lazy" decoding="async" src="/assets/img/renders/rooftop-view.jpg" alt="" /></div>
+        <div className="contact__media"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/rooftop-view-m.webp 1280w, /assets/img/renders/rooftop-view.webp 2048w" sizes="100vw" src="/assets/img/renders/rooftop-view.jpg" alt="" /></div>
         <div className="contact__inner">
           <span className="eyebrow">Enquire now</span>
           <h2 className="contact__title split">Experience it<br />for yourself</h2>

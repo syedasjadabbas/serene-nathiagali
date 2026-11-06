@@ -228,7 +228,7 @@ export function SelectorScene(props: Props) {
       {/* dusk, as in the renders: a slate sky, snow bounce from below, low warm sun with shadows */}
       <hemisphereLight args={['#a3b5cf', '#7d828c', 0.85]} />
       <directionalLight position={[-26, 15, 18]} intensity={1.5} color="#ffe2c4" castShadow
-        shadow-mapSize={[2048, 2048]} shadow-bias={-0.005} shadow-normalBias={0.12}
+        shadow-mapSize={coarsePointer ? [1024, 1024] : [2048, 2048]} shadow-bias={-0.005} shadow-normalBias={0.12}
         shadow-camera-left={-32} shadow-camera-right={32} shadow-camera-top={32} shadow-camera-bottom={-32} shadow-camera-near={1} shadow-camera-far={90} />
       <directionalLight position={[14, 8, -12]} intensity={0.45} color="#9fb6cf" />
       <Rig tower={props.tower} floor={props.floor} spin={props.spin} />

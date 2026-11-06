@@ -473,7 +473,8 @@ export function homeSetup(root: HTMLElement) {
     gsap.set(media, { x: -Math.min(0.14 * coverW * 1.25, window.innerWidth * 0.34), y: window.innerHeight * 0.44 - 0.21 * coverW * 9 / 16 * 1.25 })
     // the gold outline draws itself in, and the name rises beneath it
     gsap.fromTo($$('.loader__logo > *', loader), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 1.3, stagger: 0.08, ease: 'power2.inOut' })
-    gsap.from($$('.loader__lockup > *', loader), { opacity: 0, y: 14, duration: 0.8, stagger: 0.1, delay: 0.5, ease: 'power3.out' })
+    gsap.from($$('.loader__lockup > *', loader), { opacity: 0, y: 14, duration: 0.8, stagger: 0.1, delay: 0.1, ease: 'power3.out' })
+    render()
     const passThrough = () => {
       // snap to the very top while the loader still covers the page
       jumpTo(0)

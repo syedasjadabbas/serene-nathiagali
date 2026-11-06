@@ -9,7 +9,7 @@ export default function About() {
     <div ref={root}>
       {/* ============ PAGE HERO ============ */}
       <section className="page-hero">
-        <div className="page-hero__media"><img fetchPriority="high" src="/assets/img/renders/tower-forest-mist.jpg" alt="" /></div>
+        <div className="page-hero__media"><img fetchPriority="high" srcSet="/assets/img/renders/tower-forest-mist-m.webp 1280w, /assets/img/renders/tower-forest-mist.webp 2048w" sizes="100vw" src="/assets/img/renders/tower-forest-mist.jpg" alt="" /></div>
         <div className="page-hero__content">
           <nav className="crumbs reveal-up" aria-label="Breadcrumb"><Link to="/">Home</Link><span>/</span><span>About</span></nav>
           <h1 className="split">Redefining<br />resort living</h1>
@@ -71,7 +71,7 @@ export default function About() {
       </section>
 
       <section className="location" id="location">
-        <div className="location__media"><img loading="lazy" decoding="async" src="/assets/img/renders/aerial-clouds.jpg" alt="" /></div>
+        <div className="location__media"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/aerial-clouds-m.webp 1280w, /assets/img/renders/aerial-clouds.webp 2048w" sizes="100vw" src="/assets/img/renders/aerial-clouds.jpg" alt="" /></div>
         <div className="location__inner">
           <span className="eyebrow">Location</span>
           <h2 className="split">Two hours from Islamabad.<br />A world away from it.</h2>
@@ -88,7 +88,7 @@ export default function About() {
 
       {/* ============ ENQUIRE ============ */}
       <section className="contact" id="enquire">
-        <div className="contact__media"><img loading="lazy" decoding="async" src="/assets/img/renders/facade-entrance.jpg" alt="" /></div>
+        <div className="contact__media"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/facade-entrance-m.webp 1280w, /assets/img/renders/facade-entrance.webp 2048w" sizes="100vw" src="/assets/img/renders/facade-entrance.jpg" alt="" /></div>
         <div className="contact__inner">
           <span className="eyebrow">Enquire now</span>
           <h2 className="contact__title split">Your home<br />in the highlands</h2>

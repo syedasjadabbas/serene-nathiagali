@@ -9,7 +9,7 @@ export default function Gallery() {
     <div ref={root}>
       {/* ============ PAGE HERO ============ */}
       <section className="page-hero">
-        <div className="page-hero__media"><img fetchPriority="high" src="/assets/img/renders/sunset-rooftop.jpg" alt="" /></div>
+        <div className="page-hero__media"><img fetchPriority="high" srcSet="/assets/img/renders/sunset-rooftop-m.webp 1280w" sizes="100vw" src="/assets/img/renders/sunset-rooftop.jpg" alt="" /></div>
         <div className="page-hero__content">
           <nav className="crumbs reveal-up" aria-label="Breadcrumb"><Link to="/">Home</Link><span>/</span><span>Gallery</span></nav>
           <h1 className="split">Every season,<br />every angle</h1>
@@ -29,7 +29,7 @@ export default function Gallery() {
 
       {/* ============ ENQUIRE ============ */}
       <section className="contact" id="enquire">
-        <div className="contact__media"><img loading="lazy" decoding="async" src="/assets/img/renders/facade-entrance.jpg" alt="" /></div>
+        <div className="contact__media"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/facade-entrance-m.webp 1280w, /assets/img/renders/facade-entrance.webp 2048w" sizes="100vw" src="/assets/img/renders/facade-entrance.jpg" alt="" /></div>
         <div className="contact__inner">
           <span className="eyebrow">Enquire now</span>
           <h2 className="contact__title split">Your home<br />in the highlands</h2>

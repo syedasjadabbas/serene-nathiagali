@@ -5,6 +5,14 @@ import { whenPreloaded } from './preload'
 
 const CanvasHost = lazy(() => import('./CanvasHost'))
 
+// building a scene ahead of time must not compete with the page's own first seconds, least of all
+// on a phone; a scene that is actually on screen doesn't wait for this
+const pageSettled = new Promise<void>((resolve) => {
+  const go = () => setTimeout(resolve, 1500)
+  if (document.readyState === 'complete') go()
+  else window.addEventListener('load', go, { once: true })
+})
+
 // Shows `fallback` if the 3D scene throws (lost context, driver bug, failed chunk).
 class SceneBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
   state = { failed: false }
@@ -39,7 +47,7 @@ export function LazyCanvas<P extends object>({ scene, sceneProps, canvas = {}, f
       if (e.isIntersecting) setMounted(true)
     }, { rootMargin: warmup })
     // build well ahead of the screen, so a fast scroll never reaches an empty canvas
-    const ahead = new IntersectionObserver(([e]) => { if (e.isIntersecting) setMounted(true) }, { rootMargin: '150% 0px' })
+    const ahead = new IntersectionObserver(([e]) => { if (e.isIntersecting) void pageSettled.then(() => setMounted(true)) }, { rootMargin: '150% 0px' })
     io.observe(el)
     ahead.observe(el)
     return () => { io.disconnect(); ahead.disconnect() }

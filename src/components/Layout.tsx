@@ -57,13 +57,13 @@ export function Layout({ children }: { children: ReactNode }) {
           <span className="burger"><i /><i /></span> Menu
         </button>
         <Link to="/" className="logo" aria-label="Serene Heights Hotels & Resorts — home">
-          <img className="logo__light" src="/assets/img/logo.png" alt="Serene Heights Hotels & Resorts" />
-          <img className="logo__dark" src="/assets/img/logo-green.png" alt="" />
+          <img className="logo__light" src="/assets/img/logo-sm.webp" width="240" height="167" alt="Serene Heights Hotels & Resorts" />
+          <img className="logo__dark" src="/assets/img/logo-green-sm.webp" width="240" height="167" alt="" />
         </Link>
         <Link to="/contact" className="pill">Enquire</Link>
       </header>
 
-      <nav className="menu" id="menu" aria-hidden={!open}>
+      <nav className="menu" id="menu" aria-hidden={!open} inert={!open}>
         <ul>
           {MENU.map(([to, label]) => (
             <li key={to}><Link to={to} aria-current={path === to ? 'page' : undefined}>{label}</Link></li>

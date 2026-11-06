@@ -91,10 +91,10 @@ export default function Home() {
       {/* ============ PINNED TOUR ============ */}
       <section className="tour" id="tour">
         <div className="tour__stage">
-          <div className="scene"><img loading="lazy" decoding="async" src="/assets/img/renders/tower-forest-mist.jpg" alt="Serene Heights tower rising above the pine forest and mist" /></div>
-          <div className="scene"><img loading="lazy" decoding="async" src="/assets/img/renders/tower-closeup.jpg" alt="Upper floors and balconies of the Serene Heights apartments" /></div>
-          <div className="scene"><img loading="lazy" decoding="async" src="/assets/img/renders/rooftop-dining.jpg" alt="Rooftop restaurant with glass walls above the clouds" /></div>
-          <div className="scene"><img loading="lazy" decoding="async" src="/assets/img/renders/tower-sky.jpg" alt="Serene Heights tower against the open sky" /></div>
+          <div className="scene"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/tower-forest-mist-m.webp 1280w, /assets/img/renders/tower-forest-mist.webp 2048w" sizes="100vw" src="/assets/img/renders/tower-forest-mist.jpg" alt="Serene Heights tower rising above the pine forest and mist" /></div>
+          <div className="scene"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/tower-closeup-m.webp 1280w, /assets/img/renders/tower-closeup.webp 2048w" sizes="100vw" src="/assets/img/renders/tower-closeup.jpg" alt="Upper floors and balconies of the Serene Heights apartments" /></div>
+          <div className="scene"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/rooftop-dining-m.webp 1280w, /assets/img/renders/rooftop-dining.webp 2048w" sizes="100vw" src="/assets/img/renders/rooftop-dining.jpg" alt="Rooftop restaurant with glass walls above the clouds" /></div>
+          <div className="scene"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/tower-sky-m.webp 1280w, /assets/img/renders/tower-sky.webp 2048w" sizes="100vw" src="/assets/img/renders/tower-sky.jpg" alt="Serene Heights tower against the open sky" /></div>
           <div className="tour__shade"></div>
 
           <div className="tour__progress"><span></span></div>
@@ -299,7 +299,7 @@ export default function Home() {
       {/* ============ CONTACT ============ */}
       <section className="contact" id="contact">
         <div className="contact__media">
-          <img loading="lazy" decoding="async" src="/assets/img/renders/snow-aerial-sunset.jpg" alt="" />
+          <img loading="lazy" decoding="async" srcSet="/assets/img/renders/snow-aerial-sunset-m.webp 1280w" sizes="100vw" src="/assets/img/renders/snow-aerial-sunset.jpg" alt="" />
         </div>
         <div className="contact__inner">
           <span className="eyebrow">Enquire now</span>

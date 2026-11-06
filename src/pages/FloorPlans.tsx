@@ -2,12 +2,8 @@ import { Suspense, lazy, useRef, useState } from 'react'
 import { Link } from '../lib/router'
 import { usePage } from '../lib/usePage'
 import { TowerModel } from '../components/TowerModel'
-import { preload3D } from '../three/preload'
 
 const Plan3DViewer = lazy(() => import('../components/Plan3DViewer'))
-
-// this page opens on the 3D model: start loading it before React has even rendered
-preload3D()
 
 export default function FloorPlans() {
   const root = useRef<HTMLDivElement>(null)
@@ -19,7 +15,7 @@ export default function FloorPlans() {
     <div ref={root}>
       {/* ============ PAGE HERO ============ */}
       <section className="page-hero">
-        <div className="page-hero__media"><img fetchPriority="high" src="/assets/img/renders/aerial-pool.jpg" alt="" /></div>
+        <div className="page-hero__media"><img fetchPriority="high" srcSet="/assets/img/renders/aerial-pool-m.webp 1280w" sizes="100vw" src="/assets/img/renders/aerial-pool.jpg" alt="" /></div>
         <div className="page-hero__content">
           <nav className="crumbs reveal-up" aria-label="Breadcrumb"><Link to="/">Home</Link><span>/</span><span>Floor Plans</span></nav>
           <h1 className="split">Find your<br />apartment</h1>
@@ -90,7 +86,7 @@ export default function FloorPlans() {
 
       {/* ============ ENQUIRE ============ */}
       <section className="contact" id="enquire">
-        <div className="contact__media"><img loading="lazy" decoding="async" src="/assets/img/renders/tower-closeup.jpg" alt="" /></div>
+        <div className="contact__media"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/tower-closeup-m.webp 1280w, /assets/img/renders/tower-closeup.webp 2048w" sizes="100vw" src="/assets/img/renders/tower-closeup.jpg" alt="" /></div>
         <div className="contact__inner">
           <span className="eyebrow">Enquire now</span>
           <h2 className="contact__title split">Pick your<br />apartment</h2>
