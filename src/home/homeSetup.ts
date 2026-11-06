@@ -8,6 +8,34 @@ import { coarsePointer } from '../lib/device'
 // Runs inside the page's GSAP context; returns a cleanup for non-GSAP resources.
 
 let loaderPlayed = false // the loader plays once per visit; coming back to Home skips it
+export const loaderWillPlay = () => !loaderPlayed && !reducedMotion
+
+// the capsule window: its size and place follow the screen, `push` carries it past the edges
+const gateAt = (push: number) => {
+  const vw = window.innerWidth, vh = window.innerHeight
+  const size = Math.min(200, Math.max(110, vw * 0.14)) / 100 // the logo is drawn 100 wide
+  const cy = vh * 0.44
+  // far enough that the capsule's curved ends clear every corner of the screen
+  const reach = Math.hypot(vw / 2, Math.max(cy, vh - cy)) * 2.9 / (94 * size)
+  const scale = size * (1 + push * (reach - 1))
+  return `translate(${vw / 2} ${cy}) scale(${scale}) translate(-50 -68)`
+}
+// frame the tower in the window: it stands at 64% across and 21% down the film's first frame,
+// which is shown cover-fit, enlarged 1.25x from the top until the intro settles it
+const towerInWindow = () => {
+  const coverW = Math.max(window.innerWidth, window.innerHeight * 16 / 9)
+  // (a phone shows only the middle of the film, so the shift stops at the edge of the picture)
+  return { x: -Math.min(0.14 * coverW * 1.25, window.innerWidth * 0.34), y: window.innerHeight * 0.44 - 0.21 * coverW * 9 / 16 * 1.25 }
+}
+/** Sets up the loader's first frame, before anything else on the page has been wired up. */
+export function placeLoader(root: HTMLElement) {
+  root.querySelectorAll('.loader__move').forEach((g) => g.setAttribute('transform', gateAt(0)))
+  const { x, y } = towerInWindow()
+  root.querySelector<HTMLElement>('.hero__media')!.style.transform = `translate(${x}px, ${y}px)`
+  // the page curtain is for moving between pages: it must not hide the very first frame
+  const curtain = document.querySelector<HTMLElement>('.curtain')
+  if (curtain) curtain.style.visibility = 'hidden'
+}
 
 const $ = <T extends Element = HTMLElement>(sel: string, root: ParentNode) => root.querySelector<T>(sel)
 const $$ = <T extends Element = HTMLElement>(sel: string, root: ParentNode) => [...root.querySelectorAll<T>(sel)]
@@ -459,30 +487,18 @@ export function homeSetup(root: HTMLElement) {
       line.style.width = `${w}px`
       count.style.left = `${Math.max(w, count.offsetWidth)}px`
     }
-    // the capsule window: its size and place follow the screen, `push` carries it past the edges
     const moves = $$('.loader__move', loader)
     const gate = { push: 0 }
     const placeGate = () => {
-      const vw = window.innerWidth, vh = window.innerHeight
-      const size = Math.min(200, Math.max(110, vw * 0.14)) / 100 // the logo is drawn 100 wide
-      const cy = vh * 0.44
-      // far enough that the capsule's curved ends clear every corner of the screen
-      const reach = Math.hypot(vw / 2, Math.max(cy, vh - cy)) * 2.9 / (94 * size)
-      const scale = size * (1 + gate.push * (reach - 1))
-      const at = `translate(${vw / 2} ${cy}) scale(${scale}) translate(-50 -68)`
+      const at = gateAt(gate.push)
       moves.forEach((g) => g.setAttribute('transform', at))
     }
     placeGate()
     window.addEventListener('resize', placeGate)
-    // frame the tower in the window: it stands at 64% across and 21% down the film's first frame,
-    // which is shown cover-fit, enlarged 1.25x from the top until the intro settles it
     const media = $('.hero__media', root)
-    const coverW = Math.max(window.innerWidth, window.innerHeight * 16 / 9)
-    // (a phone shows only the middle of the film, so the shift stops at the edge of the picture)
-    gsap.set(media, { x: -Math.min(0.14 * coverW * 1.25, window.innerWidth * 0.34), y: window.innerHeight * 0.44 - 0.21 * coverW * 9 / 16 * 1.25 })
+    gsap.set(media, towerInWindow())
     // the gold outline draws itself in, and the name rises beneath it
     gsap.fromTo($$('.loader__logo > *', loader), { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: 1.3, stagger: 0.08, ease: 'power2.inOut' })
-    gsap.from($$('.loader__lockup > *', loader), { opacity: 0, y: 14, duration: 0.8, stagger: 0.1, delay: 0.1, ease: 'power3.out' })
     render()
     const passThrough = () => {
       // snap to the very top while the loader still covers the page

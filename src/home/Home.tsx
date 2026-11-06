@@ -1,8 +1,8 @@
-import { useRef } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Link } from '../lib/router'
 import { openLightbox } from '../lib/lightbox'
 import { usePage } from '../lib/usePage'
-import { homeSetup } from './homeSetup'
+import { homeSetup, loaderWillPlay, placeLoader } from './homeSetup'
 import { MapSection } from '../components/MapSection'
 import { TowerModel } from '../components/TowerModel'
 import { PaymentCalc } from '../components/PaymentCalc'
@@ -12,9 +12,12 @@ const playWalkthrough = () => openLightbox(
 
 export default function Home() {
   const root = useRef<HTMLDivElement>(null)
-  usePage(root, '', homeSetup, { reveal: false })
+  // on a first visit only the loader and the hero are drawn at first; the rest follows a moment later
+  const [boot] = useState(loaderWillPlay)
+  useLayoutEffect(() => { if (boot) placeLoader(root.current!) }, [boot])
+  usePage(root, '', homeSetup, { reveal: false, afterPaint: boot })
   return (
-    <div ref={root} className="home">
+    <div ref={root} className="home" data-boot={boot ? '' : undefined}>
       <div className="loader" id="loader" aria-hidden="true">
           {/* the green cover with a capsule window cut in it, and the gold logo round the window;
               the film plays behind, and the camera pushes through the window into it */}
