@@ -10,7 +10,18 @@ npm install
 npm run dev
 ```
 
-Opens on http://localhost:5500.
+Opens on http://localhost:5500/serene-heights-nathiagali.
+
+## Served inside the Serene Heights Group site
+
+The site lives at `/serene-heights-nathiagali` on the Serene Heights Group domain (Next.js Multi-Zones:
+the group site forwards that path to this deployment when its `NATHIAGALI_ORIGIN` is set). So it is
+built with that base path everywhere:
+
+- `vite.config.ts` sets `base`; `VITE_BASE_PATH=/` builds it for a domain root instead.
+- Public files are referenced through `BASE` (`src/lib/base.ts`), e.g. `` `${BASE}assets/img/…` ``.
+- Routes are still written as `/about`, `/floor-plans`…; the router adds and strips the base path.
+- On its own Vercel deployment `/` redirects to `/serene-heights-nathiagali`.
 
 ## Build
 
@@ -18,8 +29,9 @@ Opens on http://localhost:5500.
 npm run build
 ```
 
-Output goes to `dist/`. The site is a single-page app with real URLs (`/about`, `/floor-plans`…),
-so the host must serve `index.html` for every path. `vercel.json` already does this for Vercel.
+Output goes to `dist/serene-heights-nathiagali/`. The site is a single-page app with real URLs
+(`/serene-heights-nathiagali/about`…), so the host must serve `index.html` for every path under it.
+`vercel.json` already does this for Vercel.
 
 ## Where things live
 

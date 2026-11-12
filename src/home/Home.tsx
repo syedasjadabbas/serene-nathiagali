@@ -6,9 +6,10 @@ import { homeSetup, loaderWillPlay, placeLoader } from './homeSetup'
 import { MapSection } from '../components/MapSection'
 import { TowerModel } from '../components/TowerModel'
 import { PaymentCalc } from '../components/PaymentCalc'
+import { BASE } from '../lib/base'
 
 const playWalkthrough = () => openLightbox(
-  '<video src="/assets/video/walkthrough.mp4" poster="/assets/video/walkthrough.jpg" controls autoplay playsinline></video>')
+  `<video src="${BASE}assets/video/walkthrough.mp4" poster="${BASE}assets/video/walkthrough.jpg" controls autoplay playsinline></video>`)
 
 export default function Home() {
   const root = useRef<HTMLDivElement>(null)
@@ -94,10 +95,10 @@ export default function Home() {
       {/* ============ PINNED TOUR ============ */}
       <section className="tour" id="tour">
         <div className="tour__stage">
-          <div className="scene"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/tower-forest-mist-m.webp 1280w, /assets/img/renders/tower-forest-mist.webp 2048w" sizes="100vw" src="/assets/img/renders/tower-forest-mist.jpg" alt="Serene Heights tower rising above the pine forest and mist" /></div>
-          <div className="scene"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/tower-closeup-m.webp 1280w, /assets/img/renders/tower-closeup.webp 2048w" sizes="100vw" src="/assets/img/renders/tower-closeup.jpg" alt="Upper floors and balconies of the Serene Heights apartments" /></div>
-          <div className="scene"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/rooftop-dining-m.webp 1280w, /assets/img/renders/rooftop-dining.webp 2048w" sizes="100vw" src="/assets/img/renders/rooftop-dining.jpg" alt="Rooftop restaurant with glass walls above the clouds" /></div>
-          <div className="scene"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/tower-sky-m.webp 1280w, /assets/img/renders/tower-sky.webp 2048w" sizes="100vw" src="/assets/img/renders/tower-sky.jpg" alt="Serene Heights tower against the open sky" /></div>
+          <div className="scene"><img loading="lazy" decoding="async" srcSet={`${BASE}assets/img/renders/tower-forest-mist-m.webp 1280w, ${BASE}assets/img/renders/tower-forest-mist.webp 2048w`} sizes="100vw" src={`${BASE}assets/img/renders/tower-forest-mist.jpg`} alt="Serene Heights tower rising above the pine forest and mist" /></div>
+          <div className="scene"><img loading="lazy" decoding="async" srcSet={`${BASE}assets/img/renders/tower-closeup-m.webp 1280w, ${BASE}assets/img/renders/tower-closeup.webp 2048w`} sizes="100vw" src={`${BASE}assets/img/renders/tower-closeup.jpg`} alt="Upper floors and balconies of the Serene Heights apartments" /></div>
+          <div className="scene"><img loading="lazy" decoding="async" srcSet={`${BASE}assets/img/renders/rooftop-dining-m.webp 1280w, ${BASE}assets/img/renders/rooftop-dining.webp 2048w`} sizes="100vw" src={`${BASE}assets/img/renders/rooftop-dining.jpg`} alt="Rooftop restaurant with glass walls above the clouds" /></div>
+          <div className="scene"><img loading="lazy" decoding="async" srcSet={`${BASE}assets/img/renders/tower-sky-m.webp 1280w, ${BASE}assets/img/renders/tower-sky.webp 2048w`} sizes="100vw" src={`${BASE}assets/img/renders/tower-sky.jpg`} alt="Serene Heights tower against the open sky" /></div>
           <div className="tour__shade"></div>
 
           <div className="tour__progress"><span></span></div>
@@ -175,7 +176,7 @@ export default function Home() {
         <section className="residences" id="residences">
           <div className="cards">
             <Link className="card" to="/floor-plans">
-              <div className="card__img"><img src="/assets/img/project/aerial-pool.jpg" alt="Aerial view of the tower and its glass-roofed rooftop pool above the misty pine forest" loading="lazy" decoding="async" style={{ objectPosition: '50% 40%' }} /></div>
+              <div className="card__img"><img src={`${BASE}assets/img/project/aerial-pool.jpg`} alt="Aerial view of the tower and its glass-roofed rooftop pool above the misty pine forest" loading="lazy" decoding="async" style={{ objectPosition: '50% 40%' }} /></div>
               <div className="card__body">
                 <span className="card__num">01</span>
                 <h3>Hotel Apartments</h3>
@@ -183,7 +184,7 @@ export default function Home() {
               </div>
             </Link>
             <Link className="card" to="/payment-plan">
-              <div className="card__img"><img src="/assets/img/project/night-facade.jpg" alt="Serene Heights lit up on a snowy evening, with cars at the entrance" loading="lazy" decoding="async" style={{ objectPosition: '50% 45%' }} /></div>
+              <div className="card__img"><img src={`${BASE}assets/img/project/night-facade.jpg`} alt="Serene Heights lit up on a snowy evening, with cars at the entrance" loading="lazy" decoding="async" style={{ objectPosition: '50% 45%' }} /></div>
               <div className="card__body">
                 <span className="card__num">02</span>
                 <h3>Hotel Rooms</h3>
@@ -191,7 +192,7 @@ export default function Home() {
               </div>
             </Link>
             <Link className="card" to="/smart-property-unit">
-              <div className="card__img"><img src="/assets/img/project/snow-tower.jpg" alt="The Serene Heights tower among snow-covered pines" loading="lazy" decoding="async" style={{ objectPosition: '50% 55%' }} /></div>
+              <div className="card__img"><img src={`${BASE}assets/img/project/snow-tower.jpg`} alt="The Serene Heights tower among snow-covered pines" loading="lazy" decoding="async" style={{ objectPosition: '50% 55%' }} /></div>
               <div className="card__body">
                 <span className="card__num">03</span>
                 <h3>Co-ownership</h3>
@@ -222,16 +223,16 @@ export default function Home() {
             <p className="section-head__text">Archery, hiking, golf, snowboarding, shooting range, helipad access, massages, alpine roller coaster and rock climbing — all within the resort.</p>
             <Link className="link-more" to="/amenities">All amenities <span>→</span></Link>
           </div>
-          <figure className="hscroll__card"><img src="/assets/img/amenities/ski-slope.jpg" alt="Ski slope" loading="lazy" /><figcaption><span>01 · Snow sports</span>Ski slope</figcaption></figure>
-          <figure className="hscroll__card"><img src="/assets/img/amenities/rooftop-crown.jpg" alt="Rooftop crown" loading="lazy" /><figcaption><span>02 · Hotel & dining</span>Rooftop crown</figcaption></figure>
-          <figure className="hscroll__card"><img src="/assets/img/amenities/infinity-pool.jpg" alt="Glass-roof pool" loading="lazy" /><figcaption><span>03 · Wellness</span>Glass-roof pool</figcaption></figure>
-          <figure className="hscroll__card"><img src="/assets/img/amenities/archery.jpg" alt="Archery range" loading="lazy" /><figcaption><span>04 · Outdoor sport</span>Archery range</figcaption></figure>
-          <figure className="hscroll__card"><img src="/assets/img/amenities/rooftop-dining.jpg" alt="Rooftop restaurant" loading="lazy" /><figcaption><span>05 · Hotel & dining</span>Rooftop restaurant</figcaption></figure>
-          <figure className="hscroll__card"><img src="/assets/img/amenities/mini-golf.jpg" alt="Mini golf" loading="lazy" /><figcaption><span>06 · Outdoor sport</span>Mini golf</figcaption></figure>
-          <figure className="hscroll__card"><img src="/assets/img/amenities/sky-lounge.jpg" alt="Sky lounge" loading="lazy" /><figcaption><span>07 · Hotel & dining</span>Sky lounge</figcaption></figure>
-          <figure className="hscroll__card"><img src="/assets/img/amenities/adventure-park.jpg" alt="Adventure park" loading="lazy" /><figcaption><span>08 · Family</span>Adventure park</figcaption></figure>
-          <figure className="hscroll__card"><img src="/assets/img/amenities/sunset-terrace.jpg" alt="Sunset terrace" loading="lazy" /><figcaption><span>09 · Hotel & dining</span>Sunset terrace</figcaption></figure>
-          <figure className="hscroll__card"><img src="/assets/img/amenities/snow-trails.jpg" alt="Winter trails" loading="lazy" /><figcaption><span>10 · Snow sports</span>Winter trails</figcaption></figure>
+          <figure className="hscroll__card"><img src={`${BASE}assets/img/amenities/ski-slope.jpg`} alt="Ski slope" loading="lazy" /><figcaption><span>01 · Snow sports</span>Ski slope</figcaption></figure>
+          <figure className="hscroll__card"><img src={`${BASE}assets/img/amenities/rooftop-crown.jpg`} alt="Rooftop crown" loading="lazy" /><figcaption><span>02 · Hotel & dining</span>Rooftop crown</figcaption></figure>
+          <figure className="hscroll__card"><img src={`${BASE}assets/img/amenities/infinity-pool.jpg`} alt="Glass-roof pool" loading="lazy" /><figcaption><span>03 · Wellness</span>Glass-roof pool</figcaption></figure>
+          <figure className="hscroll__card"><img src={`${BASE}assets/img/amenities/archery.jpg`} alt="Archery range" loading="lazy" /><figcaption><span>04 · Outdoor sport</span>Archery range</figcaption></figure>
+          <figure className="hscroll__card"><img src={`${BASE}assets/img/amenities/rooftop-dining.jpg`} alt="Rooftop restaurant" loading="lazy" /><figcaption><span>05 · Hotel & dining</span>Rooftop restaurant</figcaption></figure>
+          <figure className="hscroll__card"><img src={`${BASE}assets/img/amenities/mini-golf.jpg`} alt="Mini golf" loading="lazy" /><figcaption><span>06 · Outdoor sport</span>Mini golf</figcaption></figure>
+          <figure className="hscroll__card"><img src={`${BASE}assets/img/amenities/sky-lounge.jpg`} alt="Sky lounge" loading="lazy" /><figcaption><span>07 · Hotel & dining</span>Sky lounge</figcaption></figure>
+          <figure className="hscroll__card"><img src={`${BASE}assets/img/amenities/adventure-park.jpg`} alt="Adventure park" loading="lazy" /><figcaption><span>08 · Family</span>Adventure park</figcaption></figure>
+          <figure className="hscroll__card"><img src={`${BASE}assets/img/amenities/sunset-terrace.jpg`} alt="Sunset terrace" loading="lazy" /><figcaption><span>09 · Hotel & dining</span>Sunset terrace</figcaption></figure>
+          <figure className="hscroll__card"><img src={`${BASE}assets/img/amenities/snow-trails.jpg`} alt="Winter trails" loading="lazy" /><figcaption><span>10 · Snow sports</span>Winter trails</figcaption></figure>
         </div>
       </section>
 
@@ -302,7 +303,7 @@ export default function Home() {
       {/* ============ CONTACT ============ */}
       <section className="contact" id="contact">
         <div className="contact__media">
-          <img loading="lazy" decoding="async" srcSet="/assets/img/renders/snow-aerial-sunset-m.webp 1280w" sizes="100vw" src="/assets/img/renders/snow-aerial-sunset.jpg" alt="" />
+          <img loading="lazy" decoding="async" srcSet={`${BASE}assets/img/renders/snow-aerial-sunset-m.webp 1280w`} sizes="100vw" src={`${BASE}assets/img/renders/snow-aerial-sunset.jpg`} alt="" />
         </div>
         <div className="contact__inner">
           <span className="eyebrow">Enquire now</span>

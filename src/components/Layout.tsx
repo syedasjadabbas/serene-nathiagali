@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link, usePath } from '../lib/router'
 import { lenis, ScrollTrigger, reducedMotion } from '../lib/scroll'
 import { closeLightbox } from '../lib/lightbox'
+import { BASE } from '../lib/base'
 
 export const MENU: [string, string][] = [
   ['/', 'Home'], ['/about', 'About'], ['/amenities', 'Amenities'], ['/floor-plans', 'Floor Plans'],
@@ -57,8 +58,8 @@ export function Layout({ children }: { children: ReactNode }) {
           <span className="burger"><i /><i /></span> Menu
         </button>
         <Link to="/" className="logo" aria-label="Serene Heights Hotels & Resorts — home">
-          <img className="logo__light" src="/assets/img/logo-sm.webp" width="240" height="167" alt="Serene Heights Hotels & Resorts" />
-          <img className="logo__dark" src="/assets/img/logo-green-sm.webp" width="240" height="167" alt="" />
+          <img className="logo__light" src={`${BASE}assets/img/logo-sm.webp`} width="240" height="167" alt="Serene Heights Hotels & Resorts" />
+          <img className="logo__dark" src={`${BASE}assets/img/logo-green-sm.webp`} width="240" height="167" alt="" />
         </Link>
         <Link to="/contact" className="pill">Enquire</Link>
       </header>

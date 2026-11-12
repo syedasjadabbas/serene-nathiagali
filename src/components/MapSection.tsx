@@ -4,6 +4,7 @@ import { mapState } from '../three/state'
 import { LABELLED } from '../three/geo'
 import { hasWebGL } from '../lib/device'
 import { gsap, ScrollTrigger, jumpTo, lockScroll, reducedMotion } from '../lib/scroll'
+import { BASE } from '../lib/base'
 
 const MapScene = lazy(() => import('../three/MapScene').then((m) => ({ default: m.MapScene })))
 
@@ -43,7 +44,7 @@ function MapSection3D() {
     if (!el || !img) return
     mapState.drawn = false
     const near = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting && !mapState.drawn) img.style.backgroundImage = 'url(/assets/map/galyat-sat-2048.jpg)'
+      if (e.isIntersecting && !mapState.drawn) img.style.backgroundImage = `url(${BASE}assets/map/galyat-sat-2048.jpg)`
     }, { rootMargin: '100% 0px' })
     near.observe(el)
     const id = setInterval(() => {

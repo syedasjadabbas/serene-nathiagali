@@ -11,9 +11,13 @@
   <script>
     // the first picture of each page starts downloading now, not once the app has loaded
     (function () {
-      var p = location.pathname.replace(/\/+$/, '') || '/', s = {"/about":"/assets/img/renders/tower-forest-mist-m.webp 1280w, /assets/img/renders/tower-forest-mist.webp 2048w","/amenities":"/assets/img/renders/rooftop-dining-m.webp 1280w, /assets/img/renders/rooftop-dining.webp 2048w","/floor-plans":"/assets/img/renders/aerial-pool-m.webp 1280w","/gallery":"/assets/img/renders/sunset-rooftop-m.webp 1280w","/payment-plan":"/assets/img/renders/facade-entrance-m.webp 1280w, /assets/img/renders/facade-entrance.webp 2048w","/progress":"/assets/img/renders/snow-tower-m.webp 1280w","/smart-property-unit":"/assets/img/renders/snow-aerial-sunset-m.webp 1280w","/contact":"/assets/img/renders/tower-sky-m.webp 1280w, /assets/img/renders/tower-sky.webp 2048w"}[p], l = document.createElement('link')
+      // B is the base path the site is served under (Vite fills in %BASE_URL%)
+      var B = '%BASE_URL%', R = B.replace(/\/$/, ''), p = location.pathname
+      if (R && p.indexOf(R) === 0) p = p.slice(R.length)
+      p = p.replace(/\/+$/, '') || '/'
+      var s = {"/about":"/assets/img/renders/tower-forest-mist-m.webp 1280w, /assets/img/renders/tower-forest-mist.webp 2048w","/amenities":"/assets/img/renders/rooftop-dining-m.webp 1280w, /assets/img/renders/rooftop-dining.webp 2048w","/floor-plans":"/assets/img/renders/aerial-pool-m.webp 1280w","/gallery":"/assets/img/renders/sunset-rooftop-m.webp 1280w","/payment-plan":"/assets/img/renders/facade-entrance-m.webp 1280w, /assets/img/renders/facade-entrance.webp 2048w","/progress":"/assets/img/renders/snow-tower-m.webp 1280w","/smart-property-unit":"/assets/img/renders/snow-aerial-sunset-m.webp 1280w","/contact":"/assets/img/renders/tower-sky-m.webp 1280w, /assets/img/renders/tower-sky.webp 2048w"}[p], l = document.createElement('link')
       l.rel = 'preload'; l.as = 'image'; l.fetchPriority = 'high'
-      if (s) { l.imageSrcset = s; l.imageSizes = '100vw' } else if (p === '/') l.href = '/assets/hero5/poster2.jpg'; else return
+      if (s) { l.imageSrcset = s.replace(/\/assets\//g, B + 'assets/'); l.imageSizes = '100vw' } else if (p === '/') l.href = B + 'assets/hero5/poster2.jpg'; else return
       document.head.appendChild(l)
     })()
   </script>

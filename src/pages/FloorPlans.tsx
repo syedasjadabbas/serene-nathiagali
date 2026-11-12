@@ -2,6 +2,7 @@ import { Suspense, lazy, useRef, useState } from 'react'
 import { Link } from '../lib/router'
 import { usePage } from '../lib/usePage'
 import { TowerModel } from '../components/TowerModel'
+import { BASE } from '../lib/base'
 
 const Plan3DViewer = lazy(() => import('../components/Plan3DViewer'))
 
@@ -15,7 +16,7 @@ export default function FloorPlans() {
     <div ref={root}>
       {/* ============ PAGE HERO ============ */}
       <section className="page-hero">
-        <div className="page-hero__media"><img fetchPriority="high" srcSet="/assets/img/renders/aerial-pool-m.webp 1280w" sizes="100vw" src="/assets/img/renders/aerial-pool.jpg" alt="" /></div>
+        <div className="page-hero__media"><img fetchPriority="high" srcSet={`${BASE}assets/img/renders/aerial-pool-m.webp 1280w`} sizes="100vw" src={`${BASE}assets/img/renders/aerial-pool.jpg`} alt="" /></div>
         <div className="page-hero__content">
           <nav className="crumbs reveal-up" aria-label="Breadcrumb"><Link to="/">Home</Link><span>/</span><span>Floor Plans</span></nav>
           <h1 className="split">Find your<br />apartment</h1>
@@ -35,7 +36,7 @@ export default function FloorPlans() {
           <div className="plans__tabs" role="tablist" aria-label="Floors"></div>
           <figure className="plans__stage">
             <button className="plans__open" aria-label="View floor plan full size">
-              <img id="planImg" src="/assets/img/floors/ground.jpg" alt="Ground floor plan" />
+              <img id="planImg" src={`${BASE}assets/img/floors/ground.jpg`} alt="Ground floor plan" />
             </button>
             <figcaption><span id="planName">Ground floor</span><span id="planNote"></span></figcaption>
           </figure>
@@ -86,7 +87,7 @@ export default function FloorPlans() {
 
       {/* ============ ENQUIRE ============ */}
       <section className="contact" id="enquire">
-        <div className="contact__media"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/tower-closeup-m.webp 1280w, /assets/img/renders/tower-closeup.webp 2048w" sizes="100vw" src="/assets/img/renders/tower-closeup.jpg" alt="" /></div>
+        <div className="contact__media"><img loading="lazy" decoding="async" srcSet={`${BASE}assets/img/renders/tower-closeup-m.webp 1280w, ${BASE}assets/img/renders/tower-closeup.webp 2048w`} sizes="100vw" src={`${BASE}assets/img/renders/tower-closeup.jpg`} alt="" /></div>
         <div className="contact__inner">
           <span className="eyebrow">Enquire now</span>
           <h2 className="contact__title split">Pick your<br />apartment</h2>

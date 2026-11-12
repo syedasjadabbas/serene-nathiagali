@@ -1,5 +1,6 @@
 import { gsap, ScrollTrigger } from './scroll'
 import { openLightbox, lightboxImage, lightboxVideo } from './lightbox'
+import { BASE } from './base'
 
 // Interactive widgets that live in page markup. Each only runs if its markup is present,
 // and returns a cleanup for when the page unmounts.
@@ -20,7 +21,7 @@ export const FLOORS = [
   { id: '7th', label: '7th', name: '7th floor', note: 'Apartments' },
   { id: '8th', label: '8th', name: '8th floor', note: 'Apartments' },
 ]
-export const floorPlanSrc = (id: string) => `/assets/img/floors/${id}.jpg`
+export const floorPlanSrc = (id: string) => `${BASE}assets/img/floors/${id}.jpg`
 
 function floorPlans(root: ParentNode): Cleanup | void {
   const planImg = $<HTMLImageElement>('#planImg', root)
@@ -83,8 +84,8 @@ function gallery(root: ParentNode): Cleanup | void {
   const limit = +(el.dataset.limit ?? 0) || SHOTS.length
   const render = (cat: string) => {
     el.innerHTML = SHOTS.filter((s) => cat === 'all' || s[3] === cat).slice(0, limit).map(([id, alt, size]) => `
-      <button class="shot ${size}" data-full="/assets/img/renders/${id}.jpg" aria-label="View full size: ${alt}">
-        <img src="/assets/img/renders/${id}-sm.jpg" alt="${alt}" loading="lazy">
+      <button class="shot ${size}" data-full="${BASE}assets/img/renders/${id}.jpg" aria-label="View full size: ${alt}">
+        <img src="${BASE}assets/img/renders/${id}-sm.jpg" alt="${alt}" loading="lazy">
       </button>`).join('')
   }
   render('all')

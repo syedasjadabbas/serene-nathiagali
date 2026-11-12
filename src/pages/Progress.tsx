@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { Link } from '../lib/router'
 import { usePage } from '../lib/usePage'
+import { BASE } from '../lib/base'
 
 export default function Progress() {
   const root = useRef<HTMLDivElement>(null)
@@ -9,7 +10,7 @@ export default function Progress() {
     <div ref={root}>
       {/* ============ PAGE HERO ============ */}
       <section className="page-hero">
-        <div className="page-hero__media"><img fetchPriority="high" srcSet="/assets/img/renders/snow-tower-m.webp 1280w" sizes="100vw" src="/assets/img/renders/snow-tower.jpg" alt="" /></div>
+        <div className="page-hero__media"><img fetchPriority="high" srcSet={`${BASE}assets/img/renders/snow-tower-m.webp 1280w`} sizes="100vw" src={`${BASE}assets/img/renders/snow-tower.jpg`} alt="" /></div>
         <div className="page-hero__content">
           <nav className="crumbs reveal-up" aria-label="Breadcrumb"><Link to="/">Home</Link><span>/</span><span>Progress</span></nav>
           <h1 className="split">Rising in<br />the pines</h1>
@@ -28,7 +29,7 @@ export default function Progress() {
 
       {/* ============ ENQUIRE ============ */}
       <section className="contact" id="enquire">
-        <div className="contact__media"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/tower-sky-m.webp 1280w, /assets/img/renders/tower-sky.webp 2048w" sizes="100vw" src="/assets/img/renders/tower-sky.jpg" alt="" /></div>
+        <div className="contact__media"><img loading="lazy" decoding="async" srcSet={`${BASE}assets/img/renders/tower-sky-m.webp 1280w, ${BASE}assets/img/renders/tower-sky.webp 2048w`} sizes="100vw" src={`${BASE}assets/img/renders/tower-sky.jpg`} alt="" /></div>
         <div className="contact__inner">
           <span className="eyebrow">Enquire now</span>
           <h2 className="contact__title split">See it<br />in person</h2>

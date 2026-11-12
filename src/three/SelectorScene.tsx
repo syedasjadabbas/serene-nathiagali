@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import { TOWERS as SPECS } from './towers'
 import { Landscape } from './Landscape'
+import { BASE } from '../lib/base'
 
 export type FloorRef = { tower: number; floor: number }
 
@@ -13,7 +14,7 @@ export const residentialFloors = (t: number) => SPECS[t].floors - 1
 
 // The architect's SketchUp model, simplified to a 2 MB GLB: one primitive per material
 // (stone, iron, glass, stair, roof), in metres, ground at y = 0.
-const MODEL_URL = '/assets/model/serene-heights.glb'
+const MODEL_URL = `${BASE}assets/model/serene-heights.glb`
 const S = 0.28 // metres to scene units
 // floor slab levels measured from the model, in metres; the last entries are the roof line
 const LEVELS = [-0.3, 4.3, 8.1, 12, 15.8, 19.6, 24.3, 28.1, 31.9, 35.7, 39.5, 43]

@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { Link } from '../lib/router'
 import { usePage } from '../lib/usePage'
 import { PaymentCalc } from '../components/PaymentCalc'
+import { BASE } from '../lib/base'
 
 export default function PaymentPlan() {
   const root = useRef<HTMLDivElement>(null)
@@ -10,7 +11,7 @@ export default function PaymentPlan() {
     <div ref={root}>
       {/* ============ PAGE HERO ============ */}
       <section className="page-hero">
-        <div className="page-hero__media"><img fetchPriority="high" srcSet="/assets/img/renders/facade-entrance-m.webp 1280w, /assets/img/renders/facade-entrance.webp 2048w" sizes="100vw" src="/assets/img/renders/facade-entrance.jpg" alt="" /></div>
+        <div className="page-hero__media"><img fetchPriority="high" srcSet={`${BASE}assets/img/renders/facade-entrance-m.webp 1280w, ${BASE}assets/img/renders/facade-entrance.webp 2048w`} sizes="100vw" src={`${BASE}assets/img/renders/facade-entrance.jpg`} alt="" /></div>
         <div className="page-hero__content">
           <nav className="crumbs reveal-up" aria-label="Breadcrumb"><Link to="/">Home</Link><span>/</span><span>Payment Plan</span></nav>
           <h1 className="split">Own it in<br />36 months</h1>
@@ -89,7 +90,7 @@ export default function PaymentPlan() {
 
       {/* ============ ENQUIRE ============ */}
       <section className="contact" id="enquire">
-        <div className="contact__media"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/night-facade-m.webp 720w" sizes="100vw" src="/assets/img/renders/night-facade.jpg" alt="" /></div>
+        <div className="contact__media"><img loading="lazy" decoding="async" srcSet={`${BASE}assets/img/renders/night-facade-m.webp 720w`} sizes="100vw" src={`${BASE}assets/img/renders/night-facade.jpg`} alt="" /></div>
         <div className="contact__inner">
           <span className="eyebrow">Enquire now</span>
           <h2 className="contact__title split">Start with<br />30% booking</h2>

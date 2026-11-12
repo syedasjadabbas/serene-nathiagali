@@ -6,6 +6,7 @@ import { elevation, loadDem, project, EXAG, MAP_W, MAP_D, PLACES, SERENE, ROUTE_
 import { fogGLSL } from './shaders'
 
 import { mapState } from './state'
+import { BASE } from '../lib/base'
 
 // mapState.shown follows the scroll at a capped pace so the whole drive takes at least DRIVE_SECONDS.
 const DRIVE_SECONDS = 3.5
@@ -25,7 +26,7 @@ const BG = '#8a9ea8'
 
 // Real satellite imagery of the Galyat (Copernicus Sentinel-2, 23 Feb 2026), aligned with the
 // terrain grid: it covers world x -40…34 km and z -44…48 km, the same tile as the elevation mesh.
-export const SAT_URL = (lite: boolean) => `/assets/map/galyat-sat-${lite ? 2048 : 4096}.jpg`
+export const SAT_URL = (lite: boolean) => `${BASE}assets/map/galyat-sat-${lite ? 2048 : 4096}.jpg`
 const SAT_RECT = new THREE.Vector4(-40, -44, 74, 92)
 /** Starts loading the satellite texture early (called from the 3D preloader). */
 export const preloadMapTexture = (lite: boolean) => useLoader.preload(THREE.ImageBitmapLoader, SAT_URL(lite))

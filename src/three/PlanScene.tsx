@@ -4,6 +4,7 @@ import { OrbitControls } from '@react-three/drei'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
 import { coarsePointer } from '../lib/device'
+import { BASE } from '../lib/base'
 
 // A floor plan built as a furnished floor: oak, stone and decking floors, plastered walls,
 // glass balcony railings and made beds, lit by a low sun that casts real shadows.
@@ -20,8 +21,8 @@ function loadPlan(name: string) {
   let p = cache.get(name)
   if (!p) {
     p = Promise.all([
-      fetch(`/data/plans3d/${name}.json`).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.statusText)))),
-      new THREE.TextureLoader().loadAsync(`/data/plans3d/${name}.webp`),
+      fetch(`${BASE}data/plans3d/${name}.json`).then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.statusText)))),
+      new THREE.TextureLoader().loadAsync(`${BASE}data/plans3d/${name}.webp`),
     ]).then(([data, tex]) => {
       tex.colorSpace = THREE.SRGBColorSpace
       tex.anisotropy = 8

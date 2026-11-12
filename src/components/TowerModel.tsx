@@ -6,6 +6,7 @@ import { coarsePointer, hasWebGL } from '../lib/device'
 import { Link } from '../lib/router'
 import { openLightbox, lightboxImage } from '../lib/lightbox'
 import { floorPlanSrc } from '../lib/widgets'
+import { BASE } from '../lib/base'
 
 const Plan3DViewer = lazy(() => import('./Plan3DViewer'))
 const SelectorScene = lazy(() => import('../three/SelectorScene').then((m) => ({ default: m.SelectorScene })))
@@ -46,7 +47,7 @@ export function TowerModel() {
           <LazyCanvas scene={SelectorScene}
             sceneProps={{ spin, tower, floor, hover, onHover: setHover, onPick: pickFloor, onTower: pickTower }}
             warmup="1500px" premount canvas={{ dpr: [1, 1.25], camera: { fov: 36, far: 1200, position: [6, 12, 34] }, gl: { antialias: true }, shadows: true, flat: true }}
-            fallback={<div className="sel-fallback"><img src="/assets/img/renders/tower-forest-mist-sm.jpg" alt="Serene Heights towers" /><p>The 3D model isn’t available on this device. Choose a tower and floor from the list.</p></div>} />
+            fallback={<div className="sel-fallback"><img src={`${BASE}assets/img/renders/tower-forest-mist-sm.jpg`} alt="Serene Heights towers" /><p>The 3D model isn’t available on this device. Choose a tower and floor from the list.</p></div>} />
           <div className="sel-hint">
             {hover ? `${TOWER_NAMES[hover.tower]} · Floor ${hover.floor} · ${planHint(hover.tower, hover.floor)}` : coarsePointer ? 'Tap a floor' : 'Drag to turn · Click a floor'}
           </div>

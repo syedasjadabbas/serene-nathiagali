@@ -4,6 +4,8 @@
 // public/data/galiyat-dem.bin. If that file fails to load, a hand-shaped model of
 // the same relief is used instead.
 
+import { BASE } from '../lib/base'
+
 export const LAT0 = 33.95
 export const LON0 = 73.26
 const KM_LAT = 111.3
@@ -59,7 +61,7 @@ let dem: Int16Array | null = null
 let demPromise: Promise<void> | null = null
 
 export function loadDem() {
-  demPromise ??= fetch('/data/galiyat-dem.bin')
+  demPromise ??= fetch(`${BASE}data/galiyat-dem.bin`)
     .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.statusText))))
     .then((b) => { dem = new Int16Array(b) })
     .catch((e) => { console.warn('Elevation data unavailable, using modelled relief.', e) })

@@ -3,6 +3,7 @@ import { openFilm, type HeroFilm } from './heroVideo'
 import { revealPage } from '../lib/router'
 import { preload3D } from '../three/preload'
 import { coarsePointer } from '../lib/device'
+import { BASE } from '../lib/base'
 
 // Homepage: loader → push through the logo → scroll-driven hero fly-over (canvas frame sequence) → pinned tour.
 // Runs inside the page's GSAP context; returns a cleanup for non-GSAP resources.
@@ -91,10 +92,10 @@ export function homeSetup(root: HTMLElement) {
   const FRAME_COUNT = frameSet === 'sm' ? 193 : 386
   const framesDir = frameSet === 'sm' ? 'sm' : 'lg30'
   // AVIF where the browser decodes it (about half the size of WebP), WebP otherwise
-  let frameSrc = (i: number) => `/assets/hero5/${framesDir}/${String(i + 1).padStart(3, '0')}.avif`
+  let frameSrc = (i: number) => `${BASE}assets/hero5/${framesDir}/${String(i + 1).padStart(3, '0')}.avif`
   const avifReady = supportsAvif().then((ok) => {
     // the WebP fallback is the 15 fps set
-    if (!ok) frameSrc = (i: number) => `/assets/hero5/webp/${String(Math.floor(i * 193 / FRAME_COUNT) + 1).padStart(3, '0')}.webp`
+    if (!ok) frameSrc = (i: number) => `${BASE}assets/hero5/webp/${String(Math.floor(i * 193 / FRAME_COUNT) + 1).padStart(3, '0')}.webp`
   })
   const canvas = $<HTMLCanvasElement>('.hero__canvas', root)!
   const ctx2d = canvas.getContext('2d', { alpha: false })!
@@ -269,7 +270,7 @@ export function homeSetup(root: HTMLElement) {
     // on a big screen the 720p film only covers what's around the scroll position and the 1080p film
     // hasn't reached yet, so the connection goes to the 1080p film
     let baseFollows = frameSet === 'hd' && !slowLink
-    const openBase = (name: string) => openFilm(`/assets/film2/${name}`, {
+    const openBase = (name: string) => openFilm(`${BASE}assets/film2/${name}`, {
       wantGroup: (g, at) => !baseFollows || (g >= at - 2 && g <= at + 9 && !sharpFilm?.hasGroup(g)),
       onGroup: () => sharpFilm?.seek(Math.floor(wanted), direction),
       range: () => windowAt(Math.floor(wanted)),
@@ -305,7 +306,7 @@ export function homeSetup(root: HTMLElement) {
     const small = film
     // the sharp tier starts with the first picture: its opening shares the line with the base film,
     // then it waits for that to finish, so every position has a picture as soon as possible
-    const openSharp = () => openFilm(`/assets/film2/${frameSet}`, {
+    const openSharp = () => openFilm(`${BASE}assets/film2/${frameSet}`, {
       // a soft picture beats a stuck one: the next few groups come first, from whichever film
       wantGroup: (_, at) => {
         const shown = (g: number) => g * small.gop >= FRAME_COUNT || small.hasGroup(g) || !!sharpFilm?.hasGroup(g)

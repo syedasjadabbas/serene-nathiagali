@@ -1,14 +1,22 @@
 import { useSyncExternalStore, type AnchorHTMLAttributes, type MouseEvent } from 'react'
 import { gsap, jumpTo, scrollTo, ScrollTrigger, reducedMotion } from './scroll'
+import { BASE } from './base'
 
 // A small history-API router with real URLs (/about, /floor-plans…) and back/forward support.
 // Page changes fade a dark curtain in, swap the page, jump to the top, then fade it out.
 // The host must serve index.html for every path (see vercel.json).
+// Routes are written without the base path ("/about"); the address bar shows it ("/serene-heights-nathiagali/about").
 
 const listeners = new Set<() => void>()
 const notify = () => listeners.forEach((l) => l())
 const normalise = (p: string) => (p.length > 1 ? p.replace(/\/+$/, '') : p) || '/'
-const getPath = () => normalise(window.location.pathname)
+const ROOT = BASE.replace(/\/$/, '') // "" when the site is served from the domain root
+/** Address-bar path -> route ("/serene-heights-nathiagali/about" -> "/about"). */
+export const toRoute = (pathname: string) =>
+  normalise(ROOT && (pathname === ROOT || pathname.startsWith(ROOT + '/')) ? pathname.slice(ROOT.length) : pathname)
+/** Route -> address-bar path ("/about" -> "/serene-heights-nathiagali/about", "/" -> "/serene-heights-nathiagali"). */
+export const toUrl = (route: string) => (route === '/' ? ROOT || '/' : ROOT + route)
+const getPath = () => toRoute(window.location.pathname)
 const subscribe = (l: () => void) => { listeners.add(l); return () => { listeners.delete(l) } }
 
 export function usePath() {
@@ -25,7 +33,7 @@ export function revealPage() {
 
 let leaving = false
 function swapTo(path: string, push: boolean) {
-  if (push) window.history.pushState(null, '', path)
+  if (push) window.history.pushState(null, '', toUrl(path))
   jumpTo(0)
   notify()
   requestAnimationFrame(() => ScrollTrigger.refresh())
@@ -33,7 +41,7 @@ function swapTo(path: string, push: boolean) {
 
 export function navigate(to: string) {
   if (to.startsWith('#')) { scrollTo(to === '#top' ? 0 : to); return }
-  const path = normalise(to.split('#')[0] || window.location.pathname)
+  const path = normalise(to.split('#')[0] || getPath())
   if (path === getPath()) { scrollTo(0); return }
   const c = curtain()
   if (!c || reducedMotion) { swapTo(path, true); return }
@@ -61,5 +69,5 @@ export function Link({ to, onClick, ...rest }: AnchorHTMLAttributes<HTMLAnchorEl
     window.dispatchEvent(new Event('menu:close'))
     navigate(to)
   }
-  return <a href={to} onClick={handle} {...rest} />
+  return <a href={to.startsWith('#') ? to : toUrl(to)} onClick={handle} {...rest} />
 }

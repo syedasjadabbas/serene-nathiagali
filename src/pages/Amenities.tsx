@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { Link } from '../lib/router'
 import { usePage } from '../lib/usePage'
+import { BASE } from '../lib/base'
 
 export default function Amenities() {
   const root = useRef<HTMLDivElement>(null)
@@ -9,7 +10,7 @@ export default function Amenities() {
     <div ref={root}>
       {/* ============ PAGE HERO ============ */}
       <section className="page-hero">
-        <div className="page-hero__media"><img fetchPriority="high" srcSet="/assets/img/renders/rooftop-dining-m.webp 1280w, /assets/img/renders/rooftop-dining.webp 2048w" sizes="100vw" src="/assets/img/renders/rooftop-dining.jpg" alt="" /></div>
+        <div className="page-hero__media"><img fetchPriority="high" srcSet={`${BASE}assets/img/renders/rooftop-dining-m.webp 1280w, ${BASE}assets/img/renders/rooftop-dining.webp 2048w`} sizes="100vw" src={`${BASE}assets/img/renders/rooftop-dining.jpg`} alt="" /></div>
         <div className="page-hero__content">
           <nav className="crumbs reveal-up" aria-label="Breadcrumb"><Link to="/">Home</Link><span>/</span><span>Amenities</span></nav>
           <h1 className="split">Every desire<br />on your doorstep</h1>
@@ -24,18 +25,18 @@ export default function Amenities() {
           <p className="section-head__text">Archery, hiking, golf, snowboarding, shooting range, helipad access, massages, alpine roller coaster and rock climbing — all within the resort.</p>
         </div>
         <div className="tiles">
-          <figure className="tile"><img src="/assets/img/amenities/ski-slope.jpg" alt="Ski slope" loading="lazy" /><figcaption><span>01 · Snow sports</span>Ski slope</figcaption></figure>
-          <figure className="tile"><img src="/assets/img/amenities/infinity-pool.jpg" alt="Glass-roof pool" loading="lazy" /><figcaption><span>02 · Wellness</span>Glass-roof pool</figcaption></figure>
-          <figure className="tile"><img src="/assets/img/amenities/rooftop-dining.jpg" alt="Rooftop restaurant" loading="lazy" /><figcaption><span>03 · Hotel & dining</span>Rooftop restaurant</figcaption></figure>
-          <figure className="tile"><img src="/assets/img/amenities/archery.jpg" alt="Archery range" loading="lazy" /><figcaption><span>04 · Outdoor sport</span>Archery range</figcaption></figure>
-          <figure className="tile"><img src="/assets/img/amenities/mini-golf.jpg" alt="Mini golf" loading="lazy" /><figcaption><span>05 · Outdoor sport</span>Mini golf</figcaption></figure>
-          <figure className="tile"><img src="/assets/img/amenities/rooftop-crown.jpg" alt="Rooftop crown" loading="lazy" /><figcaption><span>06 · Hotel & dining</span>Rooftop crown</figcaption></figure>
-          <figure className="tile"><img src="/assets/img/amenities/adventure-park.jpg" alt="Adventure park" loading="lazy" /><figcaption><span>07 · Family</span>Adventure park</figcaption></figure>
-          <figure className="tile"><img src="/assets/img/amenities/sky-lounge.jpg" alt="Sky lounge" loading="lazy" /><figcaption><span>08 · Hotel & dining</span>Sky lounge</figcaption></figure>
-          <figure className="tile"><img src="/assets/img/amenities/snow-trails.jpg" alt="Winter trails" loading="lazy" /><figcaption><span>09 · Snow sports</span>Winter trails</figcaption></figure>
-          <figure className="tile"><img src="/assets/img/amenities/sunset-terrace.jpg" alt="Sunset terrace" loading="lazy" /><figcaption><span>10 · Hotel & dining</span>Sunset terrace</figcaption></figure>
-          <figure className="tile"><img src="/assets/img/amenities/rooftop-terrace.jpg" alt="Garden terrace" loading="lazy" /><figcaption><span>11 · Hotel & dining</span>Garden terrace</figcaption></figure>
-          <figure className="tile"><img src="/assets/img/amenities/snowy-forest.jpg" alt="Pine forest setting" loading="lazy" /><figcaption><span>12 · Nature</span>Pine forest setting</figcaption></figure>
+          <figure className="tile"><img src={`${BASE}assets/img/amenities/ski-slope.jpg`} alt="Ski slope" loading="lazy" /><figcaption><span>01 · Snow sports</span>Ski slope</figcaption></figure>
+          <figure className="tile"><img src={`${BASE}assets/img/amenities/infinity-pool.jpg`} alt="Glass-roof pool" loading="lazy" /><figcaption><span>02 · Wellness</span>Glass-roof pool</figcaption></figure>
+          <figure className="tile"><img src={`${BASE}assets/img/amenities/rooftop-dining.jpg`} alt="Rooftop restaurant" loading="lazy" /><figcaption><span>03 · Hotel & dining</span>Rooftop restaurant</figcaption></figure>
+          <figure className="tile"><img src={`${BASE}assets/img/amenities/archery.jpg`} alt="Archery range" loading="lazy" /><figcaption><span>04 · Outdoor sport</span>Archery range</figcaption></figure>
+          <figure className="tile"><img src={`${BASE}assets/img/amenities/mini-golf.jpg`} alt="Mini golf" loading="lazy" /><figcaption><span>05 · Outdoor sport</span>Mini golf</figcaption></figure>
+          <figure className="tile"><img src={`${BASE}assets/img/amenities/rooftop-crown.jpg`} alt="Rooftop crown" loading="lazy" /><figcaption><span>06 · Hotel & dining</span>Rooftop crown</figcaption></figure>
+          <figure className="tile"><img src={`${BASE}assets/img/amenities/adventure-park.jpg`} alt="Adventure park" loading="lazy" /><figcaption><span>07 · Family</span>Adventure park</figcaption></figure>
+          <figure className="tile"><img src={`${BASE}assets/img/amenities/sky-lounge.jpg`} alt="Sky lounge" loading="lazy" /><figcaption><span>08 · Hotel & dining</span>Sky lounge</figcaption></figure>
+          <figure className="tile"><img src={`${BASE}assets/img/amenities/snow-trails.jpg`} alt="Winter trails" loading="lazy" /><figcaption><span>09 · Snow sports</span>Winter trails</figcaption></figure>
+          <figure className="tile"><img src={`${BASE}assets/img/amenities/sunset-terrace.jpg`} alt="Sunset terrace" loading="lazy" /><figcaption><span>10 · Hotel & dining</span>Sunset terrace</figcaption></figure>
+          <figure className="tile"><img src={`${BASE}assets/img/amenities/rooftop-terrace.jpg`} alt="Garden terrace" loading="lazy" /><figcaption><span>11 · Hotel & dining</span>Garden terrace</figcaption></figure>
+          <figure className="tile"><img src={`${BASE}assets/img/amenities/snowy-forest.jpg`} alt="Pine forest setting" loading="lazy" /><figcaption><span>12 · Nature</span>Pine forest setting</figcaption></figure>
         </div>
       </section>
 
@@ -211,7 +212,7 @@ export default function Amenities() {
 
       {/* ============ ENQUIRE ============ */}
       <section className="contact" id="enquire">
-        <div className="contact__media"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/rooftop-view-m.webp 1280w, /assets/img/renders/rooftop-view.webp 2048w" sizes="100vw" src="/assets/img/renders/rooftop-view.jpg" alt="" /></div>
+        <div className="contact__media"><img loading="lazy" decoding="async" srcSet={`${BASE}assets/img/renders/rooftop-view-m.webp 1280w, ${BASE}assets/img/renders/rooftop-view.webp 2048w`} sizes="100vw" src={`${BASE}assets/img/renders/rooftop-view.jpg`} alt="" /></div>
         <div className="contact__inner">
           <span className="eyebrow">Enquire now</span>
           <h2 className="contact__title split">Experience it<br />for yourself</h2>

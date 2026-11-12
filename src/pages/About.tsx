@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { Link } from '../lib/router'
 import { usePage } from '../lib/usePage'
+import { BASE } from '../lib/base'
 
 export default function About() {
   const root = useRef<HTMLDivElement>(null)
@@ -9,7 +10,7 @@ export default function About() {
     <div ref={root}>
       {/* ============ PAGE HERO ============ */}
       <section className="page-hero">
-        <div className="page-hero__media"><img fetchPriority="high" srcSet="/assets/img/renders/tower-forest-mist-m.webp 1280w, /assets/img/renders/tower-forest-mist.webp 2048w" sizes="100vw" src="/assets/img/renders/tower-forest-mist.jpg" alt="" /></div>
+        <div className="page-hero__media"><img fetchPriority="high" srcSet={`${BASE}assets/img/renders/tower-forest-mist-m.webp 1280w, ${BASE}assets/img/renders/tower-forest-mist.webp 2048w`} sizes="100vw" src={`${BASE}assets/img/renders/tower-forest-mist.jpg`} alt="" /></div>
         <div className="page-hero__content">
           <nav className="crumbs reveal-up" aria-label="Breadcrumb"><Link to="/">Home</Link><span>/</span><span>About</span></nav>
           <h1 className="split">Redefining<br />resort living</h1>
@@ -25,7 +26,7 @@ export default function About() {
 
         <section className="block" style={{ paddingTop: '0' }}>
           <div className="two-col">
-            <div className="media-frame reveal"><img src="/assets/img/renders/tower-closeup-sm.jpg" alt="Serene Heights tower in the pines" loading="lazy" /></div>
+            <div className="media-frame reveal"><img src={`${BASE}assets/img/renders/tower-closeup-sm.jpg`} alt="Serene Heights tower in the pines" loading="lazy" /></div>
             <div className="prose reveal">
               <span className="eyebrow">Project details</span>
               <p>Serene Heights Nathia Gali is positioned as Pakistan’s first winter resort concept, offering a blend of luxury apartments, resort activities and high-end hospitality services.</p>
@@ -71,7 +72,7 @@ export default function About() {
       </section>
 
       <section className="location" id="location">
-        <div className="location__media"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/aerial-clouds-m.webp 1280w, /assets/img/renders/aerial-clouds.webp 2048w" sizes="100vw" src="/assets/img/renders/aerial-clouds.jpg" alt="" /></div>
+        <div className="location__media"><img loading="lazy" decoding="async" srcSet={`${BASE}assets/img/renders/aerial-clouds-m.webp 1280w, ${BASE}assets/img/renders/aerial-clouds.webp 2048w`} sizes="100vw" src={`${BASE}assets/img/renders/aerial-clouds.jpg`} alt="" /></div>
         <div className="location__inner">
           <span className="eyebrow">Location</span>
           <h2 className="split">Two hours from Islamabad.<br />A world away from it.</h2>
@@ -88,7 +89,7 @@ export default function About() {
 
       {/* ============ ENQUIRE ============ */}
       <section className="contact" id="enquire">
-        <div className="contact__media"><img loading="lazy" decoding="async" srcSet="/assets/img/renders/facade-entrance-m.webp 1280w, /assets/img/renders/facade-entrance.webp 2048w" sizes="100vw" src="/assets/img/renders/facade-entrance.jpg" alt="" /></div>
+        <div className="contact__media"><img loading="lazy" decoding="async" srcSet={`${BASE}assets/img/renders/facade-entrance-m.webp 1280w, ${BASE}assets/img/renders/facade-entrance.webp 2048w`} sizes="100vw" src={`${BASE}assets/img/renders/facade-entrance.jpg`} alt="" /></div>
         <div className="contact__inner">
           <span className="eyebrow">Enquire now</span>
           <h2 className="contact__title split">Your home<br />in the highlands</h2>
